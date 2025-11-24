@@ -44,6 +44,10 @@ public class User {
     @Column(name = "phone")
     private String phone;
     
+    @NotBlank(message = "Password is required")
+    @Column(nullable = false)
+    private String password;
+    
     @NotNull(message = "Role is required")
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_role"))

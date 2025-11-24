@@ -58,6 +58,7 @@ class UserRepositoryTest {
                 .email("test@example.com")
                 .phone("+12025551000")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -77,6 +78,7 @@ class UserRepositoryTest {
                 .name("Email Test User")
                 .email("email.test@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -101,6 +103,7 @@ class UserRepositoryTest {
                 .name("User 1")
                 .email("duplicate@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -110,6 +113,7 @@ class UserRepositoryTest {
                 .name("User 2")
                 .email("duplicate@example.com")
                 .role(technicianRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -124,6 +128,7 @@ class UserRepositoryTest {
                 .name("Active User")
                 .email("active@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -131,6 +136,7 @@ class UserRepositoryTest {
                 .name("Inactive User")
                 .email("inactive@example.com")
                 .role(technicianRole)
+                .password("hashedPassword123")
                 .status(UserStatus.INACTIVE)
                 .build();
         
@@ -150,6 +156,7 @@ class UserRepositoryTest {
                 .name("Admin User")
                 .email("admin1@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -157,6 +164,7 @@ class UserRepositoryTest {
                 .name("Tech User")
                 .email("tech1@example.com")
                 .role(technicianRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -178,6 +186,7 @@ class UserRepositoryTest {
                 .name("Role ID Test User")
                 .email("roleid@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -195,6 +204,7 @@ class UserRepositoryTest {
                 .name("Exists Test User")
                 .email("exists@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -210,6 +220,7 @@ class UserRepositoryTest {
                 .name("Original Name")
                 .email("update@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -234,6 +245,7 @@ class UserRepositoryTest {
                 .name("Delete Test User")
                 .email("delete@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -253,6 +265,7 @@ class UserRepositoryTest {
                 .name("Status Test User")
                 .email("status@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -282,6 +295,7 @@ class UserRepositoryTest {
                 .name("Count Test User")
                 .email("count@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -297,6 +311,7 @@ class UserRepositoryTest {
                 .name("User 1")
                 .email("user1@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -304,6 +319,7 @@ class UserRepositoryTest {
                 .name("User 2")
                 .email("user2@example.com")
                 .role(technicianRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -323,6 +339,7 @@ class UserRepositoryTest {
                 .email("fk@example.com")
                 .phone("+12025551000")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
@@ -338,6 +355,7 @@ class UserRepositoryTest {
                 .name("Timestamp Test")
                 .email("timestamp@example.com")
                 .role(adminRole)
+                .password("hashedPassword123")
                 .status(UserStatus.ACTIVE)
                 .build();
         
