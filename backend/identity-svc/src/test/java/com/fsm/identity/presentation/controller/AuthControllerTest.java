@@ -44,6 +44,7 @@ class AuthControllerTest {
     static class TestSecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+            // CSRF disabled for test - mimics production config for stateless API
             http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
             return http.build();
