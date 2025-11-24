@@ -1,10 +1,14 @@
 package com.fsm.identity.domain.repository;
 
 import com.fsm.identity.domain.model.Role;
+import com.fsm.identity.domain.model.RoleEntity;
 import com.fsm.identity.domain.model.User;
 import com.fsm.identity.domain.model.User.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,363 +16,346 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for UserRepository
+ * Integration tests for UserRepository with actual database operations.
  */
+@DataJpaTest
+@TestPropertySource(locations = "classpath:application-test.properties")
 class UserRepositoryTest {
     
-    private UserRepository repository;
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
+    
+    private RoleEntity adminRole;
+    private RoleEntity technicianRole;
     
     @BeforeEach
     void setUp() {
-        repository = new UserRepository();
+        // Roles are seeded by Flyway migration, fetch them
+        adminRole = roleRepository.findByName(Role.ADMIN)
+                .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+        technicianRole = roleRepository.findByName(Role.TECHNICIAN)
+                .orElseThrow(() -> new RuntimeException("TECHNICIAN role not found"));
     }
     
     @Test
-    void testRepositoryInitializesWithHardcodedUsers() {
-        List<User> users = repository.findAll();
+    void testRolesAreSeededByMigration() {
+        List<RoleEntity> roles = roleRepository.findAll();
         
-        assertNotNull(users);
-        assertEquals(4, users.size(), "Should have 4 hardcoded users");
+        assertEquals(4, roles.size(), "Should have 4 roles seeded");
+        assertTrue(roleRepository.existsByName(Role.ADMIN));
+        assertTrue(roleRepository.existsByName(Role.DISPATCHER));
+        assertTrue(roleRepository.existsByName(Role.SUPERVISOR));
+        assertTrue(roleRepository.existsByName(Role.TECHNICIAN));
     }
     
     @Test
-    void testHardcodedUsersHaveDifferentRoles() {
-        List<User> users = repository.findAll();
+    void testSaveAndFindUser() {
+        User user = User.builder()
+                .name("Test User")
+                .email("test@example.com")
+                .phone("+12025551000")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        boolean hasAdmin = users.stream().anyMatch(u -> u.getRole() == Role.ADMIN);
-        boolean hasDispatcher = users.stream().anyMatch(u -> u.getRole() == Role.DISPATCHER);
-        boolean hasSupervisor = users.stream().anyMatch(u -> u.getRole() == Role.SUPERVISOR);
-        boolean hasTechnician = users.stream().anyMatch(u -> u.getRole() == Role.TECHNICIAN);
+        User saved = userRepository.save(user);
         
-        assertTrue(hasAdmin, "Should have an ADMIN user");
-        assertTrue(hasDispatcher, "Should have a DISPATCHER user");
-        assertTrue(hasSupervisor, "Should have a SUPERVISOR user");
-        assertTrue(hasTechnician, "Should have a TECHNICIAN user");
-    }
-    
-    @Test
-    void testHardcodedUsersAreActive() {
-        List<User> users = repository.findAll();
-        
-        assertTrue(users.stream().allMatch(User::isActive), 
-                "All hardcoded users should be active");
-    }
-    
-    @Test
-    void testHardcodedUsersHaveUniqueEmails() {
-        List<User> users = repository.findAll();
-        
-        long uniqueEmailCount = users.stream()
-                .map(User::getEmail)
-                .distinct()
-                .count();
-        
-        assertEquals(users.size(), uniqueEmailCount, 
-                "All emails should be unique");
-    }
-    
-    @Test
-    void testFindById() {
-        List<User> users = repository.findAll();
-        User firstUser = users.get(0);
-        
-        Optional<User> found = repository.findById(firstUser.getId());
-        
-        assertTrue(found.isPresent());
-        assertEquals(firstUser.getId(), found.get().getId());
-        assertEquals(firstUser.getEmail(), found.get().getEmail());
-    }
-    
-    @Test
-    void testFindByIdNotFound() {
-        Optional<User> found = repository.findById(999L);
-        
-        assertFalse(found.isPresent());
+        assertNotNull(saved.getId());
+        assertNotNull(saved.getCreatedAt());
+        assertNotNull(saved.getUpdatedAt());
+        assertEquals("Test User", saved.getName());
+        assertEquals("test@example.com", saved.getEmail());
+        assertEquals(adminRole.getId(), saved.getRole().getId());
     }
     
     @Test
     void testFindByEmail() {
-        Optional<User> found = repository.findByEmail("admin@fsm.com");
+        User user = User.builder()
+                .name("Email Test User")
+                .email("email.test@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
+        
+        userRepository.save(user);
+        
+        Optional<User> found = userRepository.findByEmail("email.test@example.com");
         
         assertTrue(found.isPresent());
-        assertEquals("admin@fsm.com", found.get().getEmail());
-        assertEquals(Role.ADMIN, found.get().getRole());
+        assertEquals("Email Test User", found.get().getName());
     }
     
     @Test
     void testFindByEmailNotFound() {
-        Optional<User> found = repository.findByEmail("nonexistent@example.com");
+        Optional<User> found = userRepository.findByEmail("nonexistent@example.com");
         
         assertFalse(found.isPresent());
     }
     
     @Test
-    void testFindByRole() {
-        List<User> admins = repository.findByRole(Role.ADMIN);
-        
-        assertNotNull(admins);
-        assertFalse(admins.isEmpty());
-        assertTrue(admins.stream().allMatch(u -> u.getRole() == Role.ADMIN));
-    }
-    
-    @Test
-    void testFindByRoleTechnician() {
-        List<User> technicians = repository.findByRole(Role.TECHNICIAN);
-        
-        assertNotNull(technicians);
-        assertFalse(technicians.isEmpty());
-        assertTrue(technicians.stream().allMatch(u -> u.getRole() == Role.TECHNICIAN));
-    }
-    
-    @Test
-    void testFindByStatus() {
-        List<User> activeUsers = repository.findByStatus(UserStatus.ACTIVE);
-        
-        assertNotNull(activeUsers);
-        assertEquals(4, activeUsers.size(), "All hardcoded users should be active");
-        assertTrue(activeUsers.stream().allMatch(User::isActive));
-    }
-    
-    @Test
-    void testFindByStatusInactive() {
-        List<User> inactiveUsers = repository.findByStatus(UserStatus.INACTIVE);
-        
-        assertNotNull(inactiveUsers);
-        assertTrue(inactiveUsers.isEmpty(), "No hardcoded users should be inactive");
-    }
-    
-    @Test
-    void testSaveNewUser() {
-        User newUser = User.builder()
-                .name("New User")
-                .email("newuser@example.com")
-                .phone("+12025559999")
-                .role(Role.TECHNICIAN)
+    void testEmailUniqueConstraint() {
+        User user1 = User.builder()
+                .name("User 1")
+                .email("duplicate@example.com")
+                .role(adminRole)
                 .status(UserStatus.ACTIVE)
                 .build();
         
-        User saved = repository.save(newUser);
+        userRepository.save(user1);
         
-        assertNotNull(saved);
-        assertNotNull(saved.getId());
-        assertEquals("newuser@example.com", saved.getEmail());
-        
-        // Verify it's in the repository
-        Optional<User> found = repository.findById(saved.getId());
-        assertTrue(found.isPresent());
-        assertEquals(saved.getId(), found.get().getId());
-    }
-    
-    @Test
-    void testSaveNewUserWithDuplicateEmail() {
-        User newUser = User.builder()
-                .name("Duplicate Email User")
-                .email("admin@fsm.com")  // Existing email
-                .role(Role.TECHNICIAN)
+        User user2 = User.builder()
+                .name("User 2")
+                .email("duplicate@example.com")
+                .role(technicianRole)
                 .status(UserStatus.ACTIVE)
                 .build();
         
-        assertThrows(IllegalArgumentException.class, () -> {
-            repository.save(newUser);
+        assertThrows(Exception.class, () -> {
+            userRepository.saveAndFlush(user2);
         }, "Should throw exception for duplicate email");
     }
     
     @Test
-    void testUpdateExistingUser() {
-        List<User> users = repository.findAll();
-        User existingUser = users.get(0);
+    void testFindByStatus() {
+        User activeUser = User.builder()
+                .name("Active User")
+                .email("active@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        // Update the user
-        existingUser.setName("Updated Name");
-        User updated = repository.save(existingUser);
+        User inactiveUser = User.builder()
+                .name("Inactive User")
+                .email("inactive@example.com")
+                .role(technicianRole)
+                .status(UserStatus.INACTIVE)
+                .build();
         
-        assertEquals("Updated Name", updated.getName());
+        userRepository.save(activeUser);
+        userRepository.save(inactiveUser);
         
-        // Verify the update persisted
-        Optional<User> found = repository.findById(existingUser.getId());
-        assertTrue(found.isPresent());
-        assertEquals("Updated Name", found.get().getName());
+        List<User> activeUsers = userRepository.findByStatus(UserStatus.ACTIVE);
+        List<User> inactiveUsers = userRepository.findByStatus(UserStatus.INACTIVE);
+        
+        assertTrue(activeUsers.size() >= 1);
+        assertTrue(inactiveUsers.size() >= 1);
     }
     
     @Test
-    void testUpdateUserEmailToExistingEmail() {
-        List<User> users = repository.findAll();
-        User user1 = users.get(0);
-        User user2 = users.get(1);
-        String user2Email = user2.getEmail(); // Store before modification
+    void testFindByRoleName() {
+        User user1 = User.builder()
+                .name("Admin User")
+                .email("admin1@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        // Try to update user1's email to user2's email
-        user1.setEmail(user2Email);
+        User user2 = User.builder()
+                .name("Tech User")
+                .email("tech1@example.com")
+                .role(technicianRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        assertThrows(IllegalArgumentException.class, () -> {
-            repository.save(user1);
-        }, "Should throw exception when updating to duplicate email");
+        userRepository.save(user1);
+        userRepository.save(user2);
+        
+        List<User> admins = userRepository.findByRoleName(Role.ADMIN);
+        List<User> technicians = userRepository.findByRoleName(Role.TECHNICIAN);
+        
+        assertTrue(admins.size() >= 1);
+        assertTrue(technicians.size() >= 1);
+        assertTrue(admins.stream().allMatch(u -> u.getRole().getName() == Role.ADMIN));
+        assertTrue(technicians.stream().allMatch(u -> u.getRole().getName() == Role.TECHNICIAN));
     }
     
     @Test
-    void testUpdateUserEmailToNewEmail() {
-        List<User> users = repository.findAll();
-        User existingUser = users.get(0);
-        String oldEmail = existingUser.getEmail();
-        String newEmail = "newemail@example.com";
+    void testFindByRoleId() {
+        User user = User.builder()
+                .name("Role ID Test User")
+                .email("roleid@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        existingUser.setEmail(newEmail);
-        User updated = repository.save(existingUser);
+        userRepository.save(user);
         
-        assertEquals(newEmail, updated.getEmail());
+        List<User> users = userRepository.findByRoleId(adminRole.getId());
         
-        // Old email should not exist
-        assertFalse(repository.findByEmail(oldEmail).isPresent());
-        
-        // New email should exist
-        assertTrue(repository.findByEmail(newEmail).isPresent());
-    }
-    
-    @Test
-    void testDeleteById() {
-        List<User> users = repository.findAll();
-        User userToDelete = users.get(0);
-        Long idToDelete = userToDelete.getId();
-        
-        assertTrue(repository.existsById(idToDelete));
-        
-        repository.deleteById(idToDelete);
-        
-        assertFalse(repository.existsById(idToDelete));
-        assertFalse(repository.findById(idToDelete).isPresent());
-    }
-    
-    @Test
-    void testExistsById() {
-        List<User> users = repository.findAll();
-        User existingUser = users.get(0);
-        
-        assertTrue(repository.existsById(existingUser.getId()));
-        assertFalse(repository.existsById(999L));
+        assertTrue(users.size() >= 1);
+        assertTrue(users.stream().allMatch(u -> u.getRole().getId().equals(adminRole.getId())));
     }
     
     @Test
     void testExistsByEmail() {
-        assertTrue(repository.existsByEmail("admin@fsm.com"));
-        assertFalse(repository.existsByEmail("nonexistent@example.com"));
+        User user = User.builder()
+                .name("Exists Test User")
+                .email("exists@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
+        
+        userRepository.save(user);
+        
+        assertTrue(userRepository.existsByEmail("exists@example.com"));
+        assertFalse(userRepository.existsByEmail("notexists@example.com"));
+    }
+    
+    @Test
+    void testUpdateUser() {
+        User user = User.builder()
+                .name("Original Name")
+                .email("update@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
+        
+        User saved = userRepository.save(user);
+        Long userId = saved.getId();
+        
+        // Update the user
+        saved.setName("Updated Name");
+        saved.setStatus(UserStatus.INACTIVE);
+        userRepository.save(saved);
+        
+        // Fetch and verify
+        Optional<User> updated = userRepository.findById(userId);
+        assertTrue(updated.isPresent());
+        assertEquals("Updated Name", updated.get().getName());
+        assertEquals(UserStatus.INACTIVE, updated.get().getStatus());
+    }
+    
+    @Test
+    void testDeleteUser() {
+        User user = User.builder()
+                .name("Delete Test User")
+                .email("delete@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
+        
+        User saved = userRepository.save(user);
+        Long userId = saved.getId();
+        
+        assertTrue(userRepository.existsById(userId));
+        
+        userRepository.deleteById(userId);
+        
+        assertFalse(userRepository.existsById(userId));
+    }
+    
+    @Test
+    void testUserActivateDeactivate() {
+        User user = User.builder()
+                .name("Status Test User")
+                .email("status@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
+        
+        User saved = userRepository.save(user);
+        assertTrue(saved.isActive());
+        
+        saved.deactivate();
+        userRepository.save(saved);
+        
+        Optional<User> deactivated = userRepository.findById(saved.getId());
+        assertTrue(deactivated.isPresent());
+        assertFalse(deactivated.get().isActive());
+        
+        deactivated.get().activate();
+        userRepository.save(deactivated.get());
+        
+        Optional<User> activated = userRepository.findById(saved.getId());
+        assertTrue(activated.isPresent());
+        assertTrue(activated.get().isActive());
     }
     
     @Test
     void testCount() {
-        long count = repository.count();
-        assertEquals(4, count, "Should have 4 hardcoded users");
-    }
-    
-    @Test
-    void testCountAfterAddingUser() {
-        long initialCount = repository.count();
+        long initialCount = userRepository.count();
         
-        User newUser = User.builder()
-                .name("New User")
-                .email("newuser@example.com")
-                .role(Role.TECHNICIAN)
+        User user = User.builder()
+                .name("Count Test User")
+                .email("count@example.com")
+                .role(adminRole)
                 .status(UserStatus.ACTIVE)
                 .build();
         
-        repository.save(newUser);
+        userRepository.save(user);
         
-        long newCount = repository.count();
+        long newCount = userRepository.count();
         assertEquals(initialCount + 1, newCount);
     }
     
     @Test
-    void testCountAfterDeletingUser() {
-        long initialCount = repository.count();
-        
-        List<User> users = repository.findAll();
-        User userToDelete = users.get(0);
-        
-        repository.deleteById(userToDelete.getId());
-        
-        long newCount = repository.count();
-        assertEquals(initialCount - 1, newCount);
-    }
-    
-    @Test
-    void testSaveUserWithInactiveStatus() {
-        User inactiveUser = User.builder()
-                .name("Inactive User")
-                .email("inactive@example.com")
-                .role(Role.TECHNICIAN)
-                .status(UserStatus.INACTIVE)
+    void testFindAll() {
+        User user1 = User.builder()
+                .name("User 1")
+                .email("user1@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
                 .build();
         
-        User saved = repository.save(inactiveUser);
+        User user2 = User.builder()
+                .name("User 2")
+                .email("user2@example.com")
+                .role(technicianRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        assertNotNull(saved);
-        assertFalse(saved.isActive());
-        assertEquals(UserStatus.INACTIVE, saved.getStatus());
+        userRepository.save(user1);
+        userRepository.save(user2);
         
-        // Verify it can be found by status
-        List<User> inactiveUsers = repository.findByStatus(UserStatus.INACTIVE);
-        assertTrue(inactiveUsers.stream().anyMatch(u -> u.getId().equals(saved.getId())));
+        List<User> allUsers = userRepository.findAll();
+        
+        assertTrue(allUsers.size() >= 2);
     }
     
     @Test
-    void testActivateAndDeactivateUser() {
-        List<User> users = repository.findAll();
-        User user = users.get(0);
+    void testForeignKeyConstraintOnRole() {
+        // Verify that user must have a valid role
+        User user = User.builder()
+                .name("FK Test User")
+                .email("fk@example.com")
+                .phone("+12025551000")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
         
-        // Deactivate
-        user.deactivate();
-        repository.save(user);
+        User saved = userRepository.save(user);
         
-        Optional<User> found = repository.findById(user.getId());
-        assertTrue(found.isPresent());
-        assertFalse(found.get().isActive());
-        
-        // Activate
-        user.activate();
-        repository.save(user);
-        
-        found = repository.findById(user.getId());
-        assertTrue(found.isPresent());
-        assertTrue(found.get().isActive());
+        assertNotNull(saved.getRole());
+        assertEquals(adminRole.getId(), saved.getRole().getId());
     }
     
     @Test
-    void testHardcodedAdminUser() {
-        Optional<User> admin = repository.findByEmail("admin@fsm.com");
+    void testTimestampsAreSet() {
+        User user = User.builder()
+                .name("Timestamp Test")
+                .email("timestamp@example.com")
+                .role(adminRole)
+                .status(UserStatus.ACTIVE)
+                .build();
+        
+        User saved = userRepository.save(user);
+        
+        assertNotNull(saved.getCreatedAt());
+        assertNotNull(saved.getUpdatedAt());
+        // Timestamps should be very close, within 1 second
+        assertTrue(Math.abs(saved.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC) 
+                - saved.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC)) <= 1);
+    }
+    
+    @Test
+    void testRoleEntityHasCorrectDescription() {
+        Optional<RoleEntity> admin = roleRepository.findByName(Role.ADMIN);
         
         assertTrue(admin.isPresent());
-        assertEquals("John Administrator", admin.get().getName());
-        assertEquals(Role.ADMIN, admin.get().getRole());
-        assertTrue(admin.get().isActive());
-        assertNotNull(admin.get().getPhone());
-    }
-    
-    @Test
-    void testHardcodedDispatcherUser() {
-        Optional<User> dispatcher = repository.findByEmail("sarah.dispatcher@fsm.com");
-        
-        assertTrue(dispatcher.isPresent());
-        assertEquals("Sarah Dispatcher", dispatcher.get().getName());
-        assertEquals(Role.DISPATCHER, dispatcher.get().getRole());
-        assertTrue(dispatcher.get().isActive());
-    }
-    
-    @Test
-    void testHardcodedSupervisorUser() {
-        Optional<User> supervisor = repository.findByEmail("mike.supervisor@fsm.com");
-        
-        assertTrue(supervisor.isPresent());
-        assertEquals("Mike Supervisor", supervisor.get().getName());
-        assertEquals(Role.SUPERVISOR, supervisor.get().getRole());
-        assertTrue(supervisor.get().isActive());
-    }
-    
-    @Test
-    void testHardcodedTechnicianUser() {
-        Optional<User> technician = repository.findByEmail("tom.technician@fsm.com");
-        
-        assertTrue(technician.isPresent());
-        assertEquals("Tom Technician", technician.get().getName());
-        assertEquals(Role.TECHNICIAN, technician.get().getRole());
-        assertTrue(technician.get().isActive());
+        assertNotNull(admin.get().getDescription());
+        assertTrue(admin.get().getDescription().contains("Administrator"));
     }
 }

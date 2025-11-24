@@ -7,6 +7,7 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,11 +18,40 @@ import static org.junit.jupiter.api.Assertions.*;
 class UserTest {
     
     private Validator validator;
+    private RoleEntity technicianRole;
+    private RoleEntity adminRole;
+    private RoleEntity dispatcherRole;
+    private RoleEntity supervisorRole;
     
     @BeforeEach
     void setUp() {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
+        
+        // Create role entities for testing
+        technicianRole = RoleEntity.builder()
+                .id(1L)
+                .name(Role.TECHNICIAN)
+                .description("Technician role")
+                .build();
+        
+        adminRole = RoleEntity.builder()
+                .id(2L)
+                .name(Role.ADMIN)
+                .description("Admin role")
+                .build();
+        
+        dispatcherRole = RoleEntity.builder()
+                .id(3L)
+                .name(Role.DISPATCHER)
+                .description("Dispatcher role")
+                .build();
+        
+        supervisorRole = RoleEntity.builder()
+                .id(4L)
+                .name(Role.SUPERVISOR)
+                .description("Supervisor role")
+                .build();
     }
     
     @Test
@@ -31,7 +61,7 @@ class UserTest {
                 .name("John Doe")
                 .email("john.doe@example.com")
                 .phone("+12025551234")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -40,7 +70,7 @@ class UserTest {
         assertEquals("John Doe", user.getName());
         assertEquals("john.doe@example.com", user.getEmail());
         assertEquals("+12025551234", user.getPhone());
-        assertEquals(Role.TECHNICIAN, user.getRole());
+        assertEquals(technicianRole, user.getRole());
         assertEquals(User.UserStatus.ACTIVE, user.getStatus());
     }
     
@@ -49,7 +79,7 @@ class UserTest {
         User user = User.builder()
                 .name("Jane Doe")
                 .email("jane.doe@example.com")
-                .role(Role.DISPATCHER)
+                .role(dispatcherRole)
                 .build();
         
         assertEquals(User.UserStatus.ACTIVE, user.getStatus(), 
@@ -61,7 +91,7 @@ class UserTest {
         User user = User.builder()
                 .name("Test User")
                 .email("test@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.INACTIVE)
                 .build();
         
@@ -76,7 +106,7 @@ class UserTest {
         User user = User.builder()
                 .name("Test User")
                 .email("test@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -91,14 +121,14 @@ class UserTest {
         User activeUser = User.builder()
                 .name("Active User")
                 .email("active@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
         User inactiveUser = User.builder()
                 .name("Inactive User")
                 .email("inactive@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.INACTIVE)
                 .build();
         
@@ -111,7 +141,7 @@ class UserTest {
         User user = User.builder()
                 .name("")
                 .email("test@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -126,7 +156,7 @@ class UserTest {
         User user = User.builder()
                 .name(null)
                 .email("test@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -141,7 +171,7 @@ class UserTest {
         User user = User.builder()
                 .name("Test User")
                 .email("invalid-email")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -156,7 +186,7 @@ class UserTest {
         User user = User.builder()
                 .name("Test User")
                 .email("")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -186,7 +216,7 @@ class UserTest {
         User user = User.builder()
                 .name("Test User")
                 .email("test@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(null)
                 .build();
         
@@ -209,7 +239,7 @@ class UserTest {
                     .name("Test User")
                     .email("test@example.com")
                     .phone(phone)
-                    .role(Role.TECHNICIAN)
+                    .role(technicianRole)
                     .status(User.UserStatus.ACTIVE)
                     .build();
             
@@ -235,7 +265,7 @@ class UserTest {
                     .name("Test User")
                     .email("test@example.com")
                     .phone(phone)
-                    .role(Role.TECHNICIAN)
+                    .role(technicianRole)
                     .status(User.UserStatus.ACTIVE)
                     .build();
             
@@ -252,7 +282,7 @@ class UserTest {
                 .name("Test User")
                 .email("test@example.com")
                 .phone(null)
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -264,9 +294,9 @@ class UserTest {
     
     @Test
     void testUserWithAllRoles() {
-        Role[] roles = Role.values();
+        RoleEntity[] roles = {technicianRole, adminRole, dispatcherRole, supervisorRole};
         
-        for (Role role : roles) {
+        for (RoleEntity role : roles) {
             User user = User.builder()
                     .name("Test User")
                     .email("test@example.com")
@@ -292,7 +322,7 @@ class UserTest {
                 .id(1L)
                 .name("John Doe")
                 .email("john@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -300,7 +330,7 @@ class UserTest {
                 .id(1L)
                 .name("John Doe")
                 .email("john@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -314,7 +344,7 @@ class UserTest {
                 .id(1L)
                 .name("John Doe")
                 .email("john@example.com")
-                .role(Role.TECHNICIAN)
+                .role(technicianRole)
                 .status(User.UserStatus.ACTIVE)
                 .build();
         
@@ -322,5 +352,149 @@ class UserTest {
         assertNotNull(toString);
         assertTrue(toString.contains("John Doe"));
         assertTrue(toString.contains("john@example.com"));
+    }
+    
+    @Test
+    void testUserEqualsWithNull() {
+        User user = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        assertNotEquals(user, null);
+    }
+    
+    @Test
+    void testUserEqualsWithDifferentClass() {
+        User user = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        assertNotEquals(user, "not a user");
+    }
+    
+    @Test
+    void testUserEqualsSameObject() {
+        User user = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        assertEquals(user, user);
+    }
+    
+    @Test
+    void testUserAllArgsConstructor() {
+        User user = new User(1L, "John", "john@example.com", "+12025551000",
+                technicianRole, User.UserStatus.ACTIVE, 
+                LocalDateTime.now(), LocalDateTime.now());
+        
+        assertNotNull(user);
+        assertEquals(1L, user.getId());
+        assertEquals("John", user.getName());
+    }
+    
+    @Test
+    void testUserSetEmail() {
+        User user = new User();
+        user.setEmail("test@example.com");
+        
+        assertEquals("test@example.com", user.getEmail());
+    }
+    
+    @Test
+    void testUserSetPhone() {
+        User user = new User();
+        user.setPhone("+12025551234");
+        
+        assertEquals("+12025551234", user.getPhone());
+    }
+    
+    @Test
+    void testUserSetRole() {
+        User user = new User();
+        user.setRole(adminRole);
+        
+        assertEquals(adminRole, user.getRole());
+    }
+    
+    @Test
+    void testUserSetId() {
+        User user = new User();
+        user.setId(99L);
+        
+        assertEquals(99L, user.getId());
+    }
+    
+    @Test
+    void testUserSetCreatedAt() {
+        User user = new User();
+        LocalDateTime now = LocalDateTime.now();
+        user.setCreatedAt(now);
+        
+        assertEquals(now, user.getCreatedAt());
+    }
+    
+    @Test
+    void testUserSetUpdatedAt() {
+        User user = new User();
+        LocalDateTime now = LocalDateTime.now();
+        user.setUpdatedAt(now);
+        
+        assertEquals(now, user.getUpdatedAt());
+    }
+    
+    @Test
+    void testUserOnUpdate() {
+        User user = new User();
+        LocalDateTime created = LocalDateTime.now().minusDays(1);
+        user.setCreatedAt(created);
+        user.setUpdatedAt(created);
+        
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            // ignore
+        }
+        
+        user.onUpdate();
+        
+        assertEquals(created, user.getCreatedAt());
+        assertNotNull(user.getUpdatedAt());
+        assertTrue(user.getUpdatedAt().isAfter(created));
+    }
+    
+    @Test
+    void testUserBuilder() {
+        User user = User.builder().build();
+        
+        assertNotNull(user);
+    }
+    
+    @Test
+    void testUserCanEqual() {
+        User user1 = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        User user2 = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        assertTrue(user1.canEqual(user2));
+        assertTrue(user2.canEqual(user1));
     }
 }

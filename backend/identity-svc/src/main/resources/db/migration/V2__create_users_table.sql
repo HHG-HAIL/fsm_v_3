@@ -1,0 +1,22 @@
+-- Create users table
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(20),
+    role_id BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES roles(id),
+    CONSTRAINT uk_user_email UNIQUE (email)
+);
+
+-- Create index on email for faster lookups
+CREATE INDEX idx_users_email ON users(email);
+
+-- Create index on role_id for faster joins
+CREATE INDEX idx_users_role_id ON users(role_id);
+
+-- Create index on status for filtering
+CREATE INDEX idx_users_status ON users(status);

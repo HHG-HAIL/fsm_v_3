@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 /**
  * User entity representing a user in the FSM system.
  * Domain Invariants:
@@ -43,9 +45,9 @@ public class User {
     private String phone;
     
     @NotNull(message = "Role is required")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, name = "role")
-    private Role role;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_role"))
+    private RoleEntity role;
     
     @NotNull(message = "Status is required")
     @Enumerated(EnumType.STRING)
@@ -53,12 +55,29 @@ public class User {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
     
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
     /**
      * User status enum representing active or inactive state
      */
     public enum UserStatus {
         ACTIVE,
         INACTIVE
+    }
+    
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
     
     /**
