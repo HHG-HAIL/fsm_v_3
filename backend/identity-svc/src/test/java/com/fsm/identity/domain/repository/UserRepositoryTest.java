@@ -346,8 +346,8 @@ class UserRepositoryTest {
         assertNotNull(saved.getCreatedAt());
         assertNotNull(saved.getUpdatedAt());
         // Timestamps should be very close, within 1 second
-        assertTrue(Math.abs(saved.getCreatedAt().toEpochSecond(java.time.ZoneOffset.UTC) 
-                - saved.getUpdatedAt().toEpochSecond(java.time.ZoneOffset.UTC)) <= 1);
+        long secondsDiff = Math.abs(java.time.Duration.between(saved.getCreatedAt(), saved.getUpdatedAt()).toSeconds());
+        assertTrue(secondsDiff <= 1, "Timestamps should be within 1 second of each other");
     }
     
     @Test
