@@ -79,9 +79,16 @@ public interface TaskRepository extends JpaRepository<ServiceTask, Long> {
     
     /**
      * Find all unassigned high priority tasks (for dispatcher dashboard)
+     * Uses method naming convention for type safety
      */
-    @Query("SELECT t FROM ServiceTask t WHERE t.status = 'UNASSIGNED' AND t.priority = 'HIGH' ORDER BY t.createdAt ASC")
-    List<ServiceTask> findUrgentUnassignedTasks();
+    List<ServiceTask> findByStatusAndPriorityOrderByCreatedAtAsc(TaskStatus status, Priority priority);
+    
+    /**
+     * Convenience method to find urgent unassigned tasks
+     */
+    default List<ServiceTask> findUrgentUnassignedTasks() {
+        return findByStatusAndPriorityOrderByCreatedAtAsc(TaskStatus.UNASSIGNED, Priority.HIGH);
+    }
     
     /**
      * Returns hardcoded sample tasks for initial development

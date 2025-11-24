@@ -22,13 +22,13 @@ CREATE TABLE IF NOT EXISTS service_tasks (
 );
 
 -- Indexes for query performance
-CREATE INDEX idx_service_tasks_status ON service_tasks(status);
-CREATE INDEX idx_service_tasks_priority ON service_tasks(priority);
-CREATE INDEX idx_service_tasks_created_at ON service_tasks(created_at);
-CREATE INDEX idx_service_tasks_created_by ON service_tasks(created_by);
+CREATE INDEX IF NOT EXISTS idx_service_tasks_status ON service_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_service_tasks_priority ON service_tasks(priority);
+CREATE INDEX IF NOT EXISTS idx_service_tasks_created_at ON service_tasks(created_at);
+CREATE INDEX IF NOT EXISTS idx_service_tasks_created_by ON service_tasks(created_by);
 
 -- Composite index for common queries
-CREATE INDEX idx_service_tasks_status_priority ON service_tasks(status, priority);
+CREATE INDEX IF NOT EXISTS idx_service_tasks_status_priority ON service_tasks(status, priority);
 
 COMMENT ON TABLE service_tasks IS 'ServiceTask aggregate - represents field service tasks in the FSM system';
 COMMENT ON COLUMN service_tasks.id IS 'Unique identifier for the task';
