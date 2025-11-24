@@ -497,4 +497,106 @@ class UserTest {
         assertTrue(user1.canEqual(user2));
         assertTrue(user2.canEqual(user1));
     }
+    
+    @Test
+    void testUserOnCreate() {
+        User user = new User();
+        assertNull(user.getCreatedAt());
+        assertNull(user.getUpdatedAt());
+        
+        user.onCreate();
+        
+        assertNotNull(user.getCreatedAt());
+        assertNotNull(user.getUpdatedAt());
+    }
+    
+    @Test
+    void testUserSetName() {
+        User user = new User();
+        user.setName("Test Name");
+        
+        assertEquals("Test Name", user.getName());
+    }
+    
+    @Test
+    void testUserSetStatus() {
+        User user = new User();
+        user.setStatus(User.UserStatus.INACTIVE);
+        
+        assertEquals(User.UserStatus.INACTIVE, user.getStatus());
+    }
+    
+    @Test
+    void testUserBuilderWithAllFields() {
+        LocalDateTime now = LocalDateTime.now();
+        User user = User.builder()
+                .id(10L)
+                .name("Complete User")
+                .email("complete@example.com")
+                .phone("+15555551234")
+                .role(adminRole)
+                .status(User.UserStatus.INACTIVE)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        
+        assertEquals(10L, user.getId());
+        assertEquals("Complete User", user.getName());
+        assertEquals("complete@example.com", user.getEmail());
+        assertEquals("+15555551234", user.getPhone());
+        assertEquals(adminRole, user.getRole());
+        assertEquals(User.UserStatus.INACTIVE, user.getStatus());
+        assertEquals(now, user.getCreatedAt());
+        assertEquals(now, user.getUpdatedAt());
+    }
+    
+    @Test
+    void testUserBuilderToString() {
+        User.UserBuilder builder = User.builder()
+                .name("Builder Test")
+                .email("builder@example.com");
+        
+        String builderStr = builder.toString();
+        assertNotNull(builderStr);
+        // Lombok builder toString should contain the builder class name
+        assertTrue(builderStr.contains("User.UserBuilder") || builderStr.contains("UserBuilder"));
+    }
+    
+    @Test
+    void testUserNotEqualsWithDifferentId() {
+        User user1 = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        User user2 = User.builder()
+                .id(2L)
+                .name("Test")
+                .email("test@example.com")
+                .role(technicianRole)
+                .build();
+        
+        assertNotEquals(user1, user2);
+    }
+    
+    @Test
+    void testUserNotEqualsWithDifferentEmail() {
+        User user1 = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test1@example.com")
+                .role(technicianRole)
+                .build();
+        
+        User user2 = User.builder()
+                .id(1L)
+                .name("Test")
+                .email("test2@example.com")
+                .role(technicianRole)
+                .build();
+        
+        assertNotEquals(user1, user2);
+    }
 }

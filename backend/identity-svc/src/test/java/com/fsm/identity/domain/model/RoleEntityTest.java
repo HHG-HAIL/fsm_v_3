@@ -237,4 +237,78 @@ class RoleEntityTest {
         assertTrue(role1.canEqual(role2));
         assertTrue(role2.canEqual(role1));
     }
+    
+    @Test
+    void testRoleEntityBuilderWithAllFields() {
+        LocalDateTime now = LocalDateTime.now();
+        RoleEntity role = RoleEntity.builder()
+                .id(5L)
+                .name(Role.SUPERVISOR)
+                .description("Supervisor with all fields")
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        
+        assertEquals(5L, role.getId());
+        assertEquals(Role.SUPERVISOR, role.getName());
+        assertEquals("Supervisor with all fields", role.getDescription());
+        assertEquals(now, role.getCreatedAt());
+        assertEquals(now, role.getUpdatedAt());
+    }
+    
+    @Test
+    void testRoleEntityBuilderToString() {
+        RoleEntity.RoleEntityBuilder builder = RoleEntity.builder()
+                .name(Role.TECHNICIAN)
+                .description("Builder test");
+        
+        String builderStr = builder.toString();
+        assertNotNull(builderStr);
+        // Lombok builder toString should contain the builder class name
+        assertTrue(builderStr.contains("RoleEntity.RoleEntityBuilder") || builderStr.contains("RoleEntityBuilder"));
+    }
+    
+    @Test
+    void testRoleEntityNotEqualsWithDifferentId() {
+        RoleEntity role1 = RoleEntity.builder()
+                .id(1L)
+                .name(Role.ADMIN)
+                .build();
+        
+        RoleEntity role2 = RoleEntity.builder()
+                .id(2L)
+                .name(Role.ADMIN)
+                .build();
+        
+        assertNotEquals(role1, role2);
+    }
+    
+    @Test
+    void testRoleEntityNotEqualsWithDifferentName() {
+        RoleEntity role1 = RoleEntity.builder()
+                .id(1L)
+                .name(Role.ADMIN)
+                .build();
+        
+        RoleEntity role2 = RoleEntity.builder()
+                .id(1L)
+                .name(Role.TECHNICIAN)
+                .build();
+        
+        assertNotEquals(role1, role2);
+    }
+    
+    @Test
+    void testRoleEntityHashCodeConsistency() {
+        RoleEntity role = RoleEntity.builder()
+                .id(1L)
+                .name(Role.ADMIN)
+                .description("Admin")
+                .build();
+        
+        int hashCode1 = role.hashCode();
+        int hashCode2 = role.hashCode();
+        
+        assertEquals(hashCode1, hashCode2);
+    }
 }
