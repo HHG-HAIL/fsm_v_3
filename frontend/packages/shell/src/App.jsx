@@ -1,5 +1,7 @@
 import './App.css'
 
+const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:5174';
+
 function App() {
   return (
     <div className="shell-container">
@@ -8,7 +10,7 @@ function App() {
       </header>
       <main className="shell-content">
         <iframe
-          src="http://localhost:5174"
+          src={IDENTITY_SERVICE_URL}
           title="Identity Service"
           className="micro-frontend-iframe"
         />
