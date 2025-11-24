@@ -98,7 +98,7 @@ class AssignmentRepositoryTest {
     void testHardcodedAssignmentWithReason() {
         List<Assignment> assignments = assignmentRepository.getHardcodedAssignments();
         
-        // Assignment 5 should have a reason (it's REASSIGNED)
+        // Find the reassigned assignment (5th in list, index 4, id=5) which has REASSIGNED status
         Assignment reassignedAssignment = assignments.get(4);
         assertEquals(AssignmentStatus.REASSIGNED, reassignedAssignment.getStatus());
         assertNotNull(reassignedAssignment.getReason());
