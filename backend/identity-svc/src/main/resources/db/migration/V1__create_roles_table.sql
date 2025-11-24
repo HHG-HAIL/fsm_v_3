@@ -1,0 +1,15 @@
+-- Create roles table
+CREATE TABLE roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert initial roles
+INSERT INTO roles (name, description) VALUES
+    ('ADMIN', 'Administrator - Full system access'),
+    ('DISPATCHER', 'Dispatcher - Manages task creation and assignment'),
+    ('SUPERVISOR', 'Supervisor - Monitors operations and analyzes performance'),
+    ('TECHNICIAN', 'Technician - Completes field tasks');
