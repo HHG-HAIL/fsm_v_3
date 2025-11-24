@@ -1,10 +1,15 @@
 package com.fsm.task.application.service;
 
+import com.fsm.task.application.dto.AssignTaskRequest;
+import com.fsm.task.application.dto.AssignTaskResponse;
 import com.fsm.task.application.dto.CreateTaskRequest;
 import com.fsm.task.application.dto.TaskResponse;
+import com.fsm.task.domain.model.Assignment;
+import com.fsm.task.domain.model.Assignment.AssignmentStatus;
 import com.fsm.task.domain.model.ServiceTask;
 import com.fsm.task.domain.model.ServiceTask.Priority;
 import com.fsm.task.domain.model.ServiceTask.TaskStatus;
+import com.fsm.task.domain.repository.AssignmentRepository;
 import com.fsm.task.domain.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,9 +20,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -28,6 +35,9 @@ class TaskServiceTest {
     
     @Mock
     private TaskRepository taskRepository;
+    
+    @Mock
+    private AssignmentRepository assignmentRepository;
     
     @InjectMocks
     private TaskService taskService;
