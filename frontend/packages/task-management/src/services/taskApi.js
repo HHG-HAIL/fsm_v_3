@@ -148,3 +148,30 @@ export const assignTask = async (taskId, technicianId) => {
 
   return response.json();
 };
+
+/**
+ * Reassign a task to a different technician
+ * @param {number} taskId - ID of the task to reassign
+ * @param {number} newTechnicianId - ID of the new technician
+ * @param {string} reason - Reason for reassignment (required for IN_PROGRESS tasks)
+ * @returns {Promise<Object>} Reassignment response with assignment history
+ */
+export const reassignTask = async (taskId, newTechnicianId, reason = null) => {
+  const body = { newTechnicianId };
+  if (reason) {
+    body.reason = reason;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/reassign`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to reassign task');
+  }
+
+  return response.json();
+};

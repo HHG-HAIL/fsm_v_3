@@ -12,7 +12,7 @@ const STATUS_OPTIONS = [
 
 const SORTABLE_COLUMNS = ['priority', 'createdAt', 'status'];
 
-const TaskListView = ({ onCreateTask }) => {
+const TaskListView = ({ onCreateTask, onReassignTask }) => {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -169,6 +169,10 @@ const TaskListView = ({ onCreateTask }) => {
   const getStatusCountLabel = (statusValue) => {
     const count = statusCounts[statusValue] || 0;
     return `(${count})`;
+  };
+
+  const canReassign = (task) => {
+    return task.status === 'ASSIGNED' || task.status === 'IN_PROGRESS';
   };
 
   const renderPagination = () => {
@@ -348,6 +352,7 @@ const TaskListView = ({ onCreateTask }) => {
                   >
                     Created <span className="sort-icon">{getSortIcon('createdAt')}</span>
                   </th>
+                  {onReassignTask && <th className="th-actions">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -368,6 +373,19 @@ const TaskListView = ({ onCreateTask }) => {
                     </td>
                     <td className="td-address" title={task.clientAddress}>{task.clientAddress}</td>
                     <td className="td-created">{formatDate(task.createdAt)}</td>
+                    {onReassignTask && (
+                      <td className="td-actions">
+                        {canReassign(task) && (
+                          <button
+                            className="reassign-button"
+                            onClick={() => onReassignTask(task)}
+                            aria-label={`Reassign task ${task.id}`}
+                          >
+                            Reassign
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
