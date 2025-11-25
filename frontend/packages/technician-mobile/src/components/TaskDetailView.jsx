@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { getTaskById, updateTaskStatus } from '../services/taskService';
+import { getTaskById, updateTaskStatus, completeTask } from '../services/taskService';
+import TaskCompletionModal from './TaskCompletionModal';
 import './TaskDetailView.css';
 
 const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
@@ -9,6 +10,7 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const fetchTask = useCallback(async () => {
     setIsLoading(true);
@@ -67,18 +69,34 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
     }
   };
 
-  const handleMarkCompleted = async () => {
+  const handleMarkCompleted = () => {
+    setShowCompletionModal(true);
+  };
+
+  const handleCloseCompletionModal = () => {
+    setShowCompletionModal(false);
+  };
+
+  const handleSubmitCompletion = async (workSummary) => {
     setIsUpdating(true);
     clearMessages();
     try {
-      await updateTaskStatus(taskId, 'COMPLETED');
+      await completeTask(taskId, workSummary);
       setTask({ ...task, status: 'COMPLETED' });
-      setSuccessMessage('Task marked as completed successfully!');
+      setSuccessMessage('Task completed successfully!');
+      setShowCompletionModal(false);
+      
       if (onStatusUpdate) {
         onStatusUpdate(taskId, 'COMPLETED');
       }
+      
+      // Navigate back to task list after showing success message
+      setTimeout(() => {
+        onBack();
+      }, 2000);
     } catch (err) {
-      setError(err.message || 'Failed to update task status');
+      setError(err.message || 'Failed to complete task');
+      setShowCompletionModal(false);
     } finally {
       setIsUpdating(false);
     }
@@ -272,6 +290,13 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
           </button>
         )}
       </div>
+
+      <TaskCompletionModal
+        isOpen={showCompletionModal}
+        onClose={handleCloseCompletionModal}
+        onSubmit={handleSubmitCompletion}
+        isSubmitting={isUpdating}
+      />
     </div>
   );
 };
