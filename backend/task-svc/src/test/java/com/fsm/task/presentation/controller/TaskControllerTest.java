@@ -456,12 +456,14 @@ class TaskControllerTest {
     @Test
     @WithMockUser(username = "dispatcher@fsm.com", roles = {"DISPATCHER"})
     void testAssignTaskWithNullTechnicianId() throws Exception {
-        String invalidRequest = "{}";
+        AssignTaskRequest invalidRequest = AssignTaskRequest.builder()
+                .technicianId(null)
+                .build();
         
         mockMvc.perform(post("/api/tasks/1/assign")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidRequest))
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
         
         verify(taskService, never()).assignTask(any(), any(), any());
