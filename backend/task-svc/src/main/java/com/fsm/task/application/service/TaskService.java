@@ -324,6 +324,7 @@ public class TaskService {
     
     /**
      * Parses the status filter string to a TaskStatus enum.
+     * Handles both underscore and no-underscore versions (e.g., "in_progress" or "IN_PROGRESS").
      * 
      * @param status the status filter string (all, assigned, in_progress, completed)
      * @return TaskStatus enum or null if "all" or invalid
@@ -334,7 +335,24 @@ public class TaskService {
         }
         
         try {
-            return TaskStatus.valueOf(status.toUpperCase());
+            // Replace underscores with nothing to handle "in_progress" -> "INPROGRESS" mapping issue
+            // Then use the correct format for enum names
+            String normalizedStatus = status.toUpperCase().replace("_", "");
+            
+            // Map to actual enum values
+            switch (normalizedStatus) {
+                case "ASSIGNED":
+                    return TaskStatus.ASSIGNED;
+                case "INPROGRESS":
+                    return TaskStatus.IN_PROGRESS;
+                case "COMPLETED":
+                    return TaskStatus.COMPLETED;
+                case "UNASSIGNED":
+                    return TaskStatus.UNASSIGNED;
+                default:
+                    log.warn("Invalid status filter: {}. Returning all tasks.", status);
+                    return null;
+            }
         } catch (IllegalArgumentException e) {
             log.warn("Invalid status filter: {}. Returning all tasks.", status);
             return null;
