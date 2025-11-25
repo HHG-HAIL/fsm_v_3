@@ -46,6 +46,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final AssignmentRepository assignmentRepository;
     private final AssignmentHistoryRepository assignmentHistoryRepository;
+    private final TechnicianValidationService technicianValidationService;
     
     /**
      * Creates a new service task.
@@ -150,6 +151,10 @@ public class TaskService {
         }
         
         Long technicianId = request.getTechnicianId();
+        
+        // Validate technician exists and is active via identity-svc
+        technicianValidationService.validateTechnician(technicianId);
+        
         Long previousTechnicianId = null;
         boolean isReassignment = task.isAssigned();
         
