@@ -6,11 +6,15 @@ import com.fsm.task.application.dto.CreateTaskRequest;
 import com.fsm.task.application.dto.TaskListRequest;
 import com.fsm.task.application.dto.TaskListResponse;
 import com.fsm.task.application.dto.TaskResponse;
+import com.fsm.task.application.exception.InvalidAssignmentException;
+import com.fsm.task.application.exception.TaskNotFoundException;
 import com.fsm.task.domain.model.Assignment;
 import com.fsm.task.domain.model.Assignment.AssignmentStatus;
+import com.fsm.task.domain.model.AssignmentHistory;
 import com.fsm.task.domain.model.ServiceTask;
 import com.fsm.task.domain.model.ServiceTask.Priority;
 import com.fsm.task.domain.model.ServiceTask.TaskStatus;
+import com.fsm.task.domain.repository.AssignmentHistoryRepository;
 import com.fsm.task.domain.repository.AssignmentRepository;
 import com.fsm.task.domain.repository.TaskRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +52,9 @@ class TaskServiceTest {
     
     @Mock
     private AssignmentRepository assignmentRepository;
+    
+    @Mock
+    private AssignmentHistoryRepository assignmentHistoryRepository;
     
     @InjectMocks
     private TaskService taskService;
@@ -579,6 +587,270 @@ class TaskServiceTest {
         
         assertNotNull(response);
         verify(taskRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+    
+    // ============== Tests for assignTask ==============
+    
+    @Test
+    void testAssignTaskSuccess() {
+        Long taskId = 1L;
+        Long technicianId = 101L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        Assignment savedAssignment = Assignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(Assignment.class))).thenReturn(savedAssignment);
+        when(assignmentHistoryRepository.save(any(AssignmentHistory.class))).thenReturn(null);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        when(assignmentRepository.getTechnicianWorkload(technicianId)).thenReturn(1);
+        
+        AssignTaskResponse response = taskService.assignTask(taskId, request, assignedBy);
+        
+        assertNotNull(response);
+        assertEquals(1L, response.getAssignmentId());
+        assertEquals(taskId, response.getTaskId());
+        assertEquals(technicianId, response.getTechnicianId());
+        assertEquals(assignedBy, response.getAssignedBy());
+        assertEquals(TaskStatus.ASSIGNED, response.getTaskStatus());
+        assertEquals(1, response.getTechnicianWorkload());
+        assertNull(response.getWorkloadWarning());
+        
+        verify(assignmentRepository).save(any(Assignment.class));
+        verify(assignmentHistoryRepository).save(any(AssignmentHistory.class));
+        verify(taskRepository).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    void testAssignTaskToTaskNotFound() {
+        Long taskId = 999L;
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(101L)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+        
+        assertThrows(TaskNotFoundException.class, 
+                () -> taskService.assignTask(taskId, request, "dispatcher@fsm.com"));
+        
+        verify(assignmentRepository, never()).save(any());
+    }
+    
+    @Test
+    void testAssignTaskToCompletedTaskFails() {
+        Long taskId = 1L;
+        ServiceTask completedTask = createTask(taskId, "Completed Task", Priority.HIGH, TaskStatus.COMPLETED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(101L)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(completedTask));
+        
+        assertThrows(InvalidAssignmentException.class, 
+                () -> taskService.assignTask(taskId, request, "dispatcher@fsm.com"));
+        
+        verify(assignmentRepository, never()).save(any());
+    }
+    
+    @Test
+    void testAssignTaskToInProgressTaskFails() {
+        Long taskId = 1L;
+        ServiceTask inProgressTask = createTask(taskId, "In Progress Task", Priority.HIGH, TaskStatus.IN_PROGRESS);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(101L)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(inProgressTask));
+        
+        assertThrows(InvalidAssignmentException.class, 
+                () -> taskService.assignTask(taskId, request, "dispatcher@fsm.com"));
+        
+        verify(assignmentRepository, never()).save(any());
+    }
+    
+    @Test
+    void testReassignTaskSuccess() {
+        Long taskId = 1L;
+        Long previousTechnicianId = 100L;
+        Long newTechnicianId = 101L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask assignedTask = ServiceTask.builder()
+                .id(taskId)
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(Priority.HIGH)
+                .status(TaskStatus.ASSIGNED)
+                .assignedTechnicianId(previousTechnicianId)
+                .createdBy("test@fsm.com")
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        Assignment previousAssignment = Assignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(previousTechnicianId)
+                .assignedAt(LocalDateTime.now().minusDays(1))
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(newTechnicianId)
+                .build();
+        
+        Assignment newAssignment = Assignment.builder()
+                .id(2L)
+                .taskId(taskId)
+                .technicianId(newTechnicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(assignedTask));
+        when(assignmentRepository.findActiveAssignmentForTask(taskId)).thenReturn(Optional.of(previousAssignment));
+        when(assignmentRepository.save(any(Assignment.class))).thenAnswer(invocation -> {
+            Assignment a = invocation.getArgument(0);
+            if (a.getId() == null) {
+                return newAssignment;
+            }
+            return a;
+        });
+        when(assignmentHistoryRepository.save(any(AssignmentHistory.class))).thenReturn(null);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(assignedTask);
+        when(assignmentRepository.getTechnicianWorkload(newTechnicianId)).thenReturn(2);
+        
+        AssignTaskResponse response = taskService.assignTask(taskId, request, assignedBy);
+        
+        assertNotNull(response);
+        assertEquals(2L, response.getAssignmentId());
+        assertEquals(newTechnicianId, response.getTechnicianId());
+        assertEquals(2, response.getTechnicianWorkload());
+        
+        // Verify previous assignment was marked as reassigned
+        verify(assignmentRepository, times(2)).save(any(Assignment.class));
+        verify(assignmentHistoryRepository).save(any(AssignmentHistory.class));
+    }
+    
+    @Test
+    void testAssignTaskWithHighWorkloadReturnsWarning() {
+        Long taskId = 1L;
+        Long technicianId = 101L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        Assignment savedAssignment = Assignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(Assignment.class))).thenReturn(savedAssignment);
+        when(assignmentHistoryRepository.save(any(AssignmentHistory.class))).thenReturn(null);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        when(assignmentRepository.getTechnicianWorkload(technicianId)).thenReturn(15); // Exceeds threshold of 10
+        
+        AssignTaskResponse response = taskService.assignTask(taskId, request, assignedBy);
+        
+        assertNotNull(response);
+        assertEquals(15, response.getTechnicianWorkload());
+        assertNotNull(response.getWorkloadWarning());
+        assertTrue(response.getWorkloadWarning().contains("exceeds"));
+    }
+    
+    @Test
+    void testAssignTaskCreatesHistoryRecord() {
+        Long taskId = 1L;
+        Long technicianId = 101L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        Assignment savedAssignment = Assignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(Assignment.class))).thenReturn(savedAssignment);
+        when(assignmentHistoryRepository.save(any(AssignmentHistory.class))).thenReturn(null);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        when(assignmentRepository.getTechnicianWorkload(technicianId)).thenReturn(1);
+        
+        taskService.assignTask(taskId, request, assignedBy);
+        
+        ArgumentCaptor<AssignmentHistory> historyCaptor = ArgumentCaptor.forClass(AssignmentHistory.class);
+        verify(assignmentHistoryRepository).save(historyCaptor.capture());
+        
+        AssignmentHistory savedHistory = historyCaptor.getValue();
+        assertEquals(taskId, savedHistory.getTaskId());
+        assertEquals(technicianId, savedHistory.getTechnicianId());
+        assertEquals(AssignmentHistory.HistoryAction.CREATED, savedHistory.getAction());
+        assertEquals(assignedBy, savedHistory.getActionBy());
+    }
+    
+    @Test
+    void testAssignTaskUpdatesTaskAssignedTechnician() {
+        Long taskId = 1L;
+        Long technicianId = 101L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        Assignment savedAssignment = Assignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(Assignment.class))).thenReturn(savedAssignment);
+        when(assignmentHistoryRepository.save(any(AssignmentHistory.class))).thenReturn(null);
+        when(taskRepository.save(any(ServiceTask.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(assignmentRepository.getTechnicianWorkload(technicianId)).thenReturn(1);
+        
+        taskService.assignTask(taskId, request, assignedBy);
+        
+        ArgumentCaptor<ServiceTask> taskCaptor = ArgumentCaptor.forClass(ServiceTask.class);
+        verify(taskRepository).save(taskCaptor.capture());
+        
+        ServiceTask savedTask = taskCaptor.getValue();
+        assertEquals(technicianId, savedTask.getAssignedTechnicianId());
+        assertEquals(TaskStatus.ASSIGNED, savedTask.getStatus());
     }
     
     // Helper method to create test tasks

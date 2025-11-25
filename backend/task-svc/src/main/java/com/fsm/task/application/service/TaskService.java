@@ -6,11 +6,15 @@ import com.fsm.task.application.dto.CreateTaskRequest;
 import com.fsm.task.application.dto.TaskListRequest;
 import com.fsm.task.application.dto.TaskListResponse;
 import com.fsm.task.application.dto.TaskResponse;
+import com.fsm.task.application.exception.InvalidAssignmentException;
+import com.fsm.task.application.exception.TaskNotFoundException;
 import com.fsm.task.domain.model.Assignment;
 import com.fsm.task.domain.model.Assignment.AssignmentStatus;
+import com.fsm.task.domain.model.AssignmentHistory;
 import com.fsm.task.domain.model.ServiceTask;
-import com.fsm.task.domain.model.ServiceTask.Priority;
 import com.fsm.task.domain.model.ServiceTask.TaskStatus;
+import com.fsm.task.domain.repository.AssignmentHistoryRepository;
+import com.fsm.task.domain.repository.AssignmentRepository;
 import com.fsm.task.domain.repository.TaskRepository;
 import com.fsm.task.domain.repository.TaskSpecification;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +27,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +45,7 @@ public class TaskService {
     
     private final TaskRepository taskRepository;
     private final AssignmentRepository assignmentRepository;
+    private final AssignmentHistoryRepository assignmentHistoryRepository;
     
     /**
      * Creates a new service task.
@@ -115,6 +122,86 @@ public class TaskService {
                 .last(taskPage.isLast())
                 .statusCounts(statusCounts)
                 .build();
+    }
+    
+    /**
+     * Assigns a task to a technician.
+     * Handles both new assignments and reassignments.
+     * Creates an assignment record and history, and updates the task atomically.
+     * 
+     * @param taskId the ID of the task to assign
+     * @param request the assignment request containing technician ID
+     * @param assignedBy the username of the user making the assignment
+     * @return AssignTaskResponse with assignment details and workload info
+     */
+    @Transactional
+    public AssignTaskResponse assignTask(Long taskId, AssignTaskRequest request, String assignedBy) {
+        log.info("Assigning task {} to technician {} by user: {}", taskId, request.getTechnicianId(), assignedBy);
+        
+        // Find the task
+        ServiceTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+        
+        // Validate task can be assigned
+        if (!task.canBeAssigned()) {
+            throw new InvalidAssignmentException(
+                    String.format("Task %d cannot be assigned. Current status: %s. Only UNASSIGNED or ASSIGNED tasks can be assigned.", 
+                            taskId, task.getStatus()));
+        }
+        
+        Long technicianId = request.getTechnicianId();
+        Long previousTechnicianId = null;
+        boolean isReassignment = task.isAssigned();
+        
+        // Handle reassignment - mark previous assignment as REASSIGNED
+        if (isReassignment) {
+            Optional<Assignment> activeAssignment = assignmentRepository.findActiveAssignmentForTask(taskId);
+            if (activeAssignment.isPresent()) {
+                Assignment previousAssignment = activeAssignment.get();
+                previousTechnicianId = previousAssignment.getTechnicianId();
+                previousAssignment.markAsReassigned("Reassigned to technician " + technicianId);
+                assignmentRepository.save(previousAssignment);
+                log.info("Marked previous assignment {} as REASSIGNED", previousAssignment.getId());
+            }
+        }
+        
+        // Create new assignment
+        Assignment assignment = Assignment.builder()
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        Assignment savedAssignment = assignmentRepository.save(assignment);
+        log.info("Created new assignment with ID: {}", savedAssignment.getId());
+        
+        // Create assignment history record
+        AssignmentHistory history;
+        if (isReassignment) {
+            history = AssignmentHistory.forReassignment(savedAssignment, previousTechnicianId, assignedBy, 
+                    "Reassigned from technician " + previousTechnicianId + " to " + technicianId);
+        } else {
+            history = AssignmentHistory.forCreation(savedAssignment, assignedBy);
+        }
+        assignmentHistoryRepository.save(history);
+        log.info("Created assignment history record");
+        
+        // Update task's assigned technician
+        if (isReassignment) {
+            task.reassignToTechnician(technicianId);
+        } else {
+            task.assignToTechnician(technicianId);
+        }
+        taskRepository.save(task);
+        log.info("Updated task {} with assigned technician {}", taskId, technicianId);
+        
+        // Calculate technician workload
+        int workload = assignmentRepository.getTechnicianWorkload(technicianId);
+        log.info("Technician {} current workload: {} active assignments", technicianId, workload);
+        
+        return AssignTaskResponse.fromAssignment(savedAssignment, task, workload, assignedBy);
     }
     
     /**
