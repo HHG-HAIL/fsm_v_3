@@ -70,6 +70,13 @@ public class ServiceTask {
     @Column(name = "started_at")
     private LocalDateTime startedAt;
     
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+    
+    @Lob
+    @Column(name = "work_summary")
+    private String workSummary;
+    
     /**
      * Priority enum representing task priority levels
      */
@@ -194,12 +201,29 @@ public class ServiceTask {
     }
     
     /**
-     * Completes the task
+     * Completes the task with work summary.
+     * Domain invariant: Only IN_PROGRESS tasks can be completed.
+     * Records completion timestamp and work summary.
+     * 
+     * @param workSummary the summary of work performed (required)
+     * @return true if the task was successfully completed, false otherwise
      */
-    public void complete() {
+    public boolean complete(String workSummary) {
         if (this.status == TaskStatus.IN_PROGRESS) {
             this.status = TaskStatus.COMPLETED;
+            this.completedAt = LocalDateTime.now();
+            this.workSummary = workSummary;
+            return true;
         }
+        return false;
+    }
+    
+    /**
+     * Checks if the task can be completed.
+     * @return true if the task can be completed (is IN_PROGRESS)
+     */
+    public boolean canBeCompleted() {
+        return this.status == TaskStatus.IN_PROGRESS;
     }
     
     /**

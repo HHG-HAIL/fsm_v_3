@@ -2,6 +2,8 @@ package com.fsm.task.presentation.controller;
 
 import com.fsm.task.application.dto.AssignTaskRequest;
 import com.fsm.task.application.dto.AssignTaskResponse;
+import com.fsm.task.application.dto.CompleteTaskRequest;
+import com.fsm.task.application.dto.CompleteTaskResponse;
 import com.fsm.task.application.dto.CreateTaskRequest;
 import com.fsm.task.application.dto.ReassignTaskRequest;
 import com.fsm.task.application.dto.ReassignTaskResponse;
@@ -359,6 +361,68 @@ public class TaskController {
                 taskId, request.getStatus(), technicianId);
         
         TechnicianTaskResponse response = taskService.updateTaskStatus(taskId, request, technicianId);
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * Completes a task with work summary.
+     * Only technicians can complete tasks assigned to them.
+     * 
+     * Domain Invariants:
+     * - Only assigned technician can complete task
+     * - Task must be in IN_PROGRESS status to be completed
+     * - Work summary is required and must be meaningful (min 10 chars)
+     * - Completion timestamp and actual duration are recorded
+     * 
+     * @param taskId the ID of the task to complete
+     * @param request the complete request containing work summary
+     * @return ResponseEntity with completed task details and duration, 200 status
+     */
+    @PostMapping("/{taskId}/complete")
+    @RequireRole({Role.TECHNICIAN})
+    @Operation(
+            summary = "Complete task with work summary",
+            description = "Marks a task as completed with work summary. Only technicians can complete their assigned tasks. " +
+                    "The task must be IN_PROGRESS to be completed. " +
+                    "Records completion timestamp and calculates actual duration.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Task completed successfully",
+                    content = @Content(schema = @Schema(implementation = CompleteTaskResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request - task not IN_PROGRESS or validation failed",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - authentication required",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - technician not assigned to task or insufficient permissions",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Task not found",
+                    content = @Content
+            )
+    })
+    public ResponseEntity<CompleteTaskResponse> completeTask(
+            @Parameter(description = "ID of the task to complete", required = true)
+            @PathVariable Long taskId,
+            @Valid @RequestBody CompleteTaskRequest request) {
+        Long technicianId = getAuthenticatedTechnicianId();
+        log.info("Received request to complete task {} by technician {} with work summary", 
+                taskId, technicianId);
+        
+        CompleteTaskResponse response = taskService.completeTask(taskId, request, technicianId);
         return ResponseEntity.ok(response);
     }
     

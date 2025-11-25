@@ -376,7 +376,7 @@ class TaskRepositoryTest {
         assertTrue(inProgress.isPresent());
         assertEquals(TaskStatus.IN_PROGRESS, inProgress.get().getStatus());
         
-        inProgress.get().complete();
+        inProgress.get().complete("Work completed successfully");
         taskRepository.save(inProgress.get());
         
         Optional<ServiceTask> completed = taskRepository.findById(saved.getId());

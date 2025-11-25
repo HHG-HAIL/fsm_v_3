@@ -332,7 +332,7 @@ class ServiceTaskTest {
                 .build();
         
         assertFalse(task.isCompleted());
-        task.complete();
+        task.complete("Work completed successfully");
         assertTrue(task.isCompleted());
         assertEquals(ServiceTask.TaskStatus.COMPLETED, task.getStatus());
     }
@@ -346,7 +346,7 @@ class ServiceTaskTest {
                 .status(ServiceTask.TaskStatus.ASSIGNED)
                 .build();
         
-        task.complete();
+        task.complete("Work completed successfully");
         // Should not change status if not in progress
         assertEquals(ServiceTask.TaskStatus.ASSIGNED, task.getStatus());
     }
@@ -413,7 +413,7 @@ class ServiceTaskTest {
         assertNotNull(task.getStartedAt());
         
         // In Progress -> Completed
-        task.complete();
+        task.complete("Work completed successfully");
         assertTrue(task.isCompleted());
         assertEquals(ServiceTask.TaskStatus.COMPLETED, task.getStatus());
     }
@@ -496,7 +496,7 @@ class ServiceTaskTest {
         ServiceTask task = new ServiceTask(1L, "Test", "Description", 
                 "123 Test St", ServiceTask.Priority.HIGH, 60, 
                 ServiceTask.TaskStatus.UNASSIGNED, "test@example.com", 
-                LocalDateTime.now(), null, null);
+                LocalDateTime.now(), null, null, null, null);
         
         assertNotNull(task);
         assertEquals(1L, task.getId());
