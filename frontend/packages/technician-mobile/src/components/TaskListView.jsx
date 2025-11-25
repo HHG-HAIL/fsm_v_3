@@ -19,7 +19,7 @@ const TaskListView = () => {
   const touchStartY = useRef(0);
   const touchEndY = useRef(0);
 
-  const fetchTasks = useCallback(async (status = activeFilter) => {
+  const fetchTasks = useCallback(async (status) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -31,7 +31,7 @@ const TaskListView = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [activeFilter]);
+  }, []);
 
   useEffect(() => {
     fetchTasks(activeFilter);
@@ -46,11 +46,15 @@ const TaskListView = () => {
   };
 
   const handleTouchStart = (e) => {
-    touchStartY.current = e.touches[0].clientY;
+    if (e.touches && e.touches.length > 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
   };
 
   const handleTouchMove = (e) => {
-    touchEndY.current = e.touches[0].clientY;
+    if (e.touches && e.touches.length > 0) {
+      touchEndY.current = e.touches[0].clientY;
+    }
   };
 
   const handleTouchEnd = () => {
