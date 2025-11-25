@@ -108,7 +108,6 @@ const TaskReassignmentModal = ({ task, isOpen, onClose, onReassignmentComplete }
       setShowWarning(true);
     } else {
       setShowConfirmation(true);
-      setShowWarning(false);
     }
   };
 
@@ -271,7 +270,7 @@ const TaskReassignmentModal = ({ task, isOpen, onClose, onReassignmentComplete }
   const renderWarningView = () => (
     <div className="warning-view">
       <div className="warning-icon-large" role="img" aria-label="Warning">⚠️</div>
-      <p className="warning-title">Task In Progress</p>
+      <p className="warning-title">Warning: Task In Progress</p>
       <p className="warning-message">
         This task is currently <strong>IN PROGRESS</strong>. Reassigning it may disrupt ongoing work.
       </p>
