@@ -1030,7 +1030,6 @@ class TaskServiceTest {
         
         when(taskRepository.findByTechnicianIdAndStatusOrderedByPriority(technicianId, TaskStatus.COMPLETED))
                 .thenReturn(Collections.singletonList(completedToday));
-        when(assignmentRepository.findByTaskIdAndStatus(1L, AssignmentStatus.COMPLETED)).thenReturn(Optional.empty());
         when(assignmentRepository.findActiveAssignmentForTask(any())).thenReturn(Optional.empty());
         
         TechnicianTaskListResponse response = taskService.getTechnicianTasks(technicianId, "completed");
@@ -1056,7 +1055,6 @@ class TaskServiceTest {
         
         when(taskRepository.findByTechnicianIdOrderedByPriority(technicianId))
                 .thenReturn(Collections.singletonList(completedYesterday));
-        when(assignmentRepository.findByTaskIdAndStatus(1L, AssignmentStatus.COMPLETED)).thenReturn(Optional.empty());
         
         TechnicianTaskListResponse response = taskService.getTechnicianTasks(technicianId, "all");
         

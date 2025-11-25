@@ -87,31 +87,52 @@ public class TechnicianController {
      * Gets the technician ID of the authenticated user from the security context.
      * Extracts the technician ID from the authentication principal.
      * 
-     * Note: In a production environment, this would extract the technician ID from
-     * the JWT token claims. For now, it parses the username to extract the ID.
+     * PRODUCTION NOTE: In a real production environment, this would extract the 
+     * technician ID from JWT token claims (e.g., a "technicianId" claim). The current
+     * implementation uses a convention-based approach for development/testing.
+     * 
+     * Convention: Username should be in format "technician_{id}" (e.g., "technician_101")
+     * or the ID will be derived from the username.
      * 
      * @return the authenticated technician's ID
+     * @throws IllegalStateException if the user is not authenticated
      */
     private Long getAuthenticatedTechnicianId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() 
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-            // In production, this would extract technician ID from JWT claims
-            // For now, we assume the username contains the technician identifier
-            String username = authentication.getName();
-            // Try to extract numeric ID from username (e.g., "technician_101" -> 101)
-            // If not possible, use a hash of the username as the ID
+        if (authentication == null || !authentication.isAuthenticated() 
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new IllegalStateException("User must be authenticated to access technician tasks");
+        }
+        
+        // In production, this would extract technician ID from JWT claims
+        // For now, we use a convention-based approach
+        String username = authentication.getName();
+        
+        // Try to extract numeric ID from username pattern "technician_{id}"
+        if (username.startsWith("technician_")) {
             try {
-                if (username.contains("_")) {
-                    String idPart = username.substring(username.lastIndexOf("_") + 1);
-                    return Long.parseLong(idPart);
-                }
-                // Use hash for usernames like "tech@fsm.com"
-                return (long) Math.abs(username.hashCode());
+                String idPart = username.substring("technician_".length());
+                return Long.parseLong(idPart);
             } catch (NumberFormatException e) {
-                return (long) Math.abs(username.hashCode());
+                log.debug("Could not parse technician ID from username: {}", username);
             }
         }
-        throw new IllegalStateException("Unable to determine technician ID from authentication");
+        
+        // For other username formats (e.g., "tech_user_42"), try extracting the last numeric part
+        if (username.contains("_")) {
+            try {
+                String idPart = username.substring(username.lastIndexOf("_") + 1);
+                return Long.parseLong(idPart);
+            } catch (NumberFormatException e) {
+                log.debug("Could not parse numeric ID from username: {}", username);
+            }
+        }
+        
+        // Fallback: Use a deterministic ID based on username
+        // This ensures the same username always maps to the same ID
+        // Note: This is for development/testing only
+        long hashBasedId = Math.abs((long) username.hashCode());
+        log.debug("Using hash-based technician ID {} for username: {}", hashBasedId, username);
+        return hashBasedId;
     }
 }

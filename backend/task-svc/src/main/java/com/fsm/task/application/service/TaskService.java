@@ -286,17 +286,16 @@ public class TaskService {
         }
         
         // Filter out completed tasks from previous days
+        // Note: Since we don't have a completedAt field, we use createdAt as a proxy
+        // In a production system, you would add a completedAt field to track actual completion time
         LocalDate today = LocalDate.now();
         tasks = tasks.stream()
                 .filter(task -> {
                     if (task.getStatus() == TaskStatus.COMPLETED) {
-                        // Get assigned date from assignment if available, else use createdAt
-                        Optional<Assignment> assignment = assignmentRepository.findByTaskIdAndStatus(
-                                task.getId(), AssignmentStatus.COMPLETED);
-                        LocalDate completionDate = assignment
-                                .map(a -> a.getAssignedAt().toLocalDate())
-                                .orElse(task.getCreatedAt().toLocalDate());
-                        return !completionDate.isBefore(today);
+                        // Use task's createdAt as a proxy for when it was worked on
+                        // Completed tasks from previous days should not be shown
+                        LocalDate taskDate = task.getCreatedAt().toLocalDate();
+                        return !taskDate.isBefore(today);
                     }
                     return true;
                 })
@@ -324,7 +323,7 @@ public class TaskService {
     
     /**
      * Parses the status filter string to a TaskStatus enum.
-     * Handles both underscore and no-underscore versions (e.g., "in_progress" or "IN_PROGRESS").
+     * Handles various input formats like "in_progress", "IN_PROGRESS", "inprogress", etc.
      * 
      * @param status the status filter string (all, assigned, in_progress, completed)
      * @return TaskStatus enum or null if "all" or invalid
@@ -334,28 +333,17 @@ public class TaskService {
             return null;
         }
         
-        try {
-            // Replace underscores with nothing to handle "in_progress" -> "INPROGRESS" mapping issue
-            // Then use the correct format for enum names
-            String normalizedStatus = status.toUpperCase().replace("_", "");
-            
-            // Map to actual enum values
-            switch (normalizedStatus) {
-                case "ASSIGNED":
-                    return TaskStatus.ASSIGNED;
-                case "INPROGRESS":
-                    return TaskStatus.IN_PROGRESS;
-                case "COMPLETED":
-                    return TaskStatus.COMPLETED;
-                case "UNASSIGNED":
-                    return TaskStatus.UNASSIGNED;
-                default:
-                    log.warn("Invalid status filter: {}. Returning all tasks.", status);
-                    return null;
+        // Normalize the input: uppercase and remove underscores
+        String normalized = status.toUpperCase().replace("_", "");
+        
+        for (TaskStatus taskStatus : TaskStatus.values()) {
+            // Compare with enum name without underscores
+            if (taskStatus.name().replace("_", "").equals(normalized)) {
+                return taskStatus;
             }
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid status filter: {}. Returning all tasks.", status);
-            return null;
         }
+        
+        log.warn("Invalid status filter: {}. Returning all tasks.", status);
+        return null;
     }
 }
