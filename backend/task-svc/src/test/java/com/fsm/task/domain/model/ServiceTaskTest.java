@@ -332,7 +332,7 @@ class ServiceTaskTest {
                 .build();
         
         assertFalse(task.isCompleted());
-        task.complete();
+        task.complete("Work completed successfully");
         assertTrue(task.isCompleted());
         assertEquals(ServiceTask.TaskStatus.COMPLETED, task.getStatus());
     }
@@ -346,7 +346,7 @@ class ServiceTaskTest {
                 .status(ServiceTask.TaskStatus.ASSIGNED)
                 .build();
         
-        task.complete();
+        task.complete("Work completed successfully");
         // Should not change status if not in progress
         assertEquals(ServiceTask.TaskStatus.ASSIGNED, task.getStatus());
     }
@@ -413,7 +413,7 @@ class ServiceTaskTest {
         assertNotNull(task.getStartedAt());
         
         // In Progress -> Completed
-        task.complete();
+        task.complete("Work completed successfully");
         assertTrue(task.isCompleted());
         assertEquals(ServiceTask.TaskStatus.COMPLETED, task.getStatus());
     }
@@ -496,7 +496,7 @@ class ServiceTaskTest {
         ServiceTask task = new ServiceTask(1L, "Test", "Description", 
                 "123 Test St", ServiceTask.Priority.HIGH, 60, 
                 ServiceTask.TaskStatus.UNASSIGNED, "test@example.com", 
-                LocalDateTime.now(), null, null);
+                LocalDateTime.now(), null, null, null, null);
         
         assertNotNull(task);
         assertEquals(1L, task.getId());
@@ -1108,5 +1108,120 @@ class ServiceTaskTest {
         task.setStartedAt(now);
         
         assertEquals(now, task.getStartedAt());
+    }
+    
+    @Test
+    void testCompleteMethodWithWorkSummary() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now().minusHours(1))
+                .build();
+        
+        String workSummary = "Replaced HVAC compressor and tested";
+        boolean result = task.complete(workSummary);
+        
+        assertTrue(result);
+        assertEquals(ServiceTask.TaskStatus.COMPLETED, task.getStatus());
+        assertEquals(workSummary, task.getWorkSummary());
+        assertNotNull(task.getCompletedAt());
+    }
+    
+    @Test
+    void testCompleteMethodReturnsFalseWhenNotInProgress() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.ASSIGNED)
+                .build();
+        
+        boolean result = task.complete("Work summary");
+        
+        assertFalse(result);
+        assertEquals(ServiceTask.TaskStatus.ASSIGNED, task.getStatus());
+        assertNull(task.getWorkSummary());
+        assertNull(task.getCompletedAt());
+    }
+    
+    @Test
+    void testCanBeCompletedMethod() {
+        ServiceTask inProgressTask = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.IN_PROGRESS)
+                .build();
+        
+        assertTrue(inProgressTask.canBeCompleted());
+        
+        ServiceTask assignedTask = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.ASSIGNED)
+                .build();
+        
+        assertFalse(assignedTask.canBeCompleted());
+    }
+    
+    @Test
+    void testGetCompletedAt() {
+        ServiceTask task = new ServiceTask();
+        assertNull(task.getCompletedAt());
+        
+        LocalDateTime now = LocalDateTime.now();
+        task.setCompletedAt(now);
+        assertEquals(now, task.getCompletedAt());
+    }
+    
+    @Test
+    void testSetCompletedAt() {
+        ServiceTask task = new ServiceTask();
+        LocalDateTime completedAt = LocalDateTime.now();
+        task.setCompletedAt(completedAt);
+        
+        assertEquals(completedAt, task.getCompletedAt());
+    }
+    
+    @Test
+    void testGetWorkSummary() {
+        ServiceTask task = new ServiceTask();
+        assertNull(task.getWorkSummary());
+        
+        String summary = "Work completed successfully";
+        task.setWorkSummary(summary);
+        assertEquals(summary, task.getWorkSummary());
+    }
+    
+    @Test
+    void testSetWorkSummary() {
+        ServiceTask task = new ServiceTask();
+        String workSummary = "Detailed work summary";
+        task.setWorkSummary(workSummary);
+        
+        assertEquals(workSummary, task.getWorkSummary());
+    }
+    
+    @Test
+    void testCompleteTaskRecordsTimestamp() throws InterruptedException {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now().minusHours(1))
+                .build();
+        
+        LocalDateTime beforeComplete = LocalDateTime.now();
+        Thread.sleep(10); // Small delay to ensure timestamp difference
+        task.complete("Work completed");
+        LocalDateTime afterComplete = LocalDateTime.now();
+        
+        assertNotNull(task.getCompletedAt());
+        assertTrue(task.getCompletedAt().isAfter(beforeComplete) || task.getCompletedAt().isEqual(beforeComplete));
+        assertTrue(task.getCompletedAt().isBefore(afterComplete) || task.getCompletedAt().isEqual(afterComplete));
     }
 }

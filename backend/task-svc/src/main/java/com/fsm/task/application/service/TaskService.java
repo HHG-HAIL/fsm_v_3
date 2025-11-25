@@ -2,6 +2,8 @@ package com.fsm.task.application.service;
 
 import com.fsm.task.application.dto.AssignTaskRequest;
 import com.fsm.task.application.dto.AssignTaskResponse;
+import com.fsm.task.application.dto.CompleteTaskRequest;
+import com.fsm.task.application.dto.CompleteTaskResponse;
 import com.fsm.task.application.dto.CreateTaskRequest;
 import com.fsm.task.application.dto.ReassignTaskRequest;
 import com.fsm.task.application.dto.ReassignTaskResponse;
@@ -519,5 +521,64 @@ public class TaskService {
                 .orElse(task.getCreatedAt());
         
         return TechnicianTaskResponse.fromEntity(savedTask, assignedAt);
+    }
+    
+    /**
+     * Completes a task with work summary by an authenticated technician.
+     * 
+     * Domain Invariants:
+     * - Only assigned technician can complete task
+     * - Task must be in IN_PROGRESS status to be completed
+     * - Work summary is required and must be meaningful (min 10 chars)
+     * - Completion timestamp and actual duration are recorded
+     * 
+     * @param taskId the ID of the task to complete
+     * @param request the complete request containing work summary
+     * @param technicianId the ID of the authenticated technician
+     * @return CompleteTaskResponse with the completed task details and duration
+     * @throws TaskNotFoundException if the task doesn't exist
+     * @throws UnauthorizedTaskAccessException if the technician is not assigned to the task
+     * @throws InvalidStatusTransitionException if the task is not IN_PROGRESS
+     */
+    @Transactional
+    public CompleteTaskResponse completeTask(Long taskId, CompleteTaskRequest request, Long technicianId) {
+        log.info("Completing task {} by technician {} with work summary", taskId, technicianId);
+        
+        // Find the task
+        ServiceTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
+        
+        // Validate that the authenticated technician is assigned to this task
+        if (!task.isAssignedTo(technicianId)) {
+            log.warn("Technician {} attempted to complete task {} that is assigned to technician {}", 
+                    technicianId, taskId, task.getAssignedTechnicianId());
+            throw new UnauthorizedTaskAccessException(
+                    String.format("Technician %d is not assigned to task %d", technicianId, taskId));
+        }
+        
+        // Validate that task can be completed (must be IN_PROGRESS)
+        if (!task.canBeCompleted()) {
+            log.warn("Attempted to complete task {} with status {} - only IN_PROGRESS tasks can be completed", 
+                    taskId, task.getStatus());
+            throw new InvalidStatusTransitionException(
+                    String.format("Task %d cannot be completed. Current status: %s. Only IN_PROGRESS tasks can be completed.", 
+                            taskId, task.getStatus()));
+        }
+        
+        // Complete the task (this records completedAt timestamp and work summary)
+        task.complete(request.getWorkSummary());
+        log.info("Task {} completed at {}", taskId, task.getCompletedAt());
+        
+        // Save the updated task
+        ServiceTask savedTask = taskRepository.save(task);
+        log.info("Task {} status updated to COMPLETED with work summary", taskId);
+        
+        // Get the assigned at timestamp from the assignment
+        Optional<Assignment> activeAssignment = assignmentRepository.findActiveAssignmentForTask(taskId);
+        LocalDateTime assignedAt = activeAssignment
+                .map(Assignment::getAssignedAt)
+                .orElse(task.getCreatedAt());
+        
+        return CompleteTaskResponse.fromEntity(savedTask, assignedAt);
     }
 }
