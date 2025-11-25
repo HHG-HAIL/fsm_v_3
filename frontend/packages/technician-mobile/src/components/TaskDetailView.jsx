@@ -8,6 +8,7 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const fetchTask = useCallback(async () => {
     setIsLoading(true);
@@ -26,6 +27,21 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
     fetchTask();
   }, [fetchTask]);
 
+  // Auto-dismiss success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccessMessage(null);
+  };
+
   const handleStartNavigation = () => {
     const address = task.clientAddress || task.address;
     if (address) {
@@ -36,9 +52,11 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
 
   const handleMarkInProgress = async () => {
     setIsUpdating(true);
+    clearMessages();
     try {
       await updateTaskStatus(taskId, 'IN_PROGRESS');
       setTask({ ...task, status: 'IN_PROGRESS' });
+      setSuccessMessage('Task marked as in progress successfully!');
       if (onStatusUpdate) {
         onStatusUpdate(taskId, 'IN_PROGRESS');
       }
@@ -51,9 +69,11 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
 
   const handleMarkCompleted = async () => {
     setIsUpdating(true);
+    clearMessages();
     try {
       await updateTaskStatus(taskId, 'COMPLETED');
       setTask({ ...task, status: 'COMPLETED' });
+      setSuccessMessage('Task marked as completed successfully!');
       if (onStatusUpdate) {
         onStatusUpdate(taskId, 'COMPLETED');
       }
@@ -170,6 +190,12 @@ const TaskDetailView = ({ taskId, onBack, onStatusUpdate }) => {
       {error && (
         <div className="error-message" role="alert">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="success-message" role="status" aria-live="polite">
+          {successMessage}
         </div>
       )}
 
