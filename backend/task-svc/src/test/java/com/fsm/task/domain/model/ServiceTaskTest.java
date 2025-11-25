@@ -986,4 +986,127 @@ class ServiceTaskTest {
         assertTrue(inProgressTask.isInProgress());
         assertFalse(assignedTask.isInProgress());
     }
+    
+    @Test
+    void testCanBeStartedFromAssigned() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.ASSIGNED)
+                .build();
+        
+        assertTrue(task.canBeStarted());
+    }
+    
+    @Test
+    void testCannotBeStartedFromUnassigned() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.UNASSIGNED)
+                .build();
+        
+        assertFalse(task.canBeStarted());
+    }
+    
+    @Test
+    void testCannotBeStartedFromInProgress() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.IN_PROGRESS)
+                .build();
+        
+        assertFalse(task.canBeStarted());
+    }
+    
+    @Test
+    void testCannotBeStartedFromCompleted() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.COMPLETED)
+                .build();
+        
+        assertFalse(task.canBeStarted());
+    }
+    
+    @Test
+    void testIsAssignedToWithMatchingTechnician() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.ASSIGNED)
+                .assignedTechnicianId(101L)
+                .build();
+        
+        assertTrue(task.isAssignedTo(101L));
+    }
+    
+    @Test
+    void testIsAssignedToWithDifferentTechnician() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.ASSIGNED)
+                .assignedTechnicianId(101L)
+                .build();
+        
+        assertFalse(task.isAssignedTo(102L));
+    }
+    
+    @Test
+    void testIsAssignedToWithNullAssignedTechnician() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.UNASSIGNED)
+                .assignedTechnicianId(null)
+                .build();
+        
+        assertFalse(task.isAssignedTo(101L));
+    }
+    
+    @Test
+    void testIsAssignedToWithNullInput() {
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.ASSIGNED)
+                .assignedTechnicianId(101L)
+                .build();
+        
+        assertFalse(task.isAssignedTo(null));
+    }
+    
+    @Test
+    void testStartedAtField() {
+        LocalDateTime now = LocalDateTime.now();
+        ServiceTask task = ServiceTask.builder()
+                .title("Test Task")
+                .clientAddress("123 Test St")
+                .priority(ServiceTask.Priority.HIGH)
+                .status(ServiceTask.TaskStatus.IN_PROGRESS)
+                .startedAt(now)
+                .build();
+        
+        assertEquals(now, task.getStartedAt());
+    }
+    
+    @Test
+    void testSetStartedAt() {
+        ServiceTask task = new ServiceTask();
+        LocalDateTime now = LocalDateTime.now();
+        task.setStartedAt(now);
+        
+        assertEquals(now, task.getStartedAt());
+    }
 }
