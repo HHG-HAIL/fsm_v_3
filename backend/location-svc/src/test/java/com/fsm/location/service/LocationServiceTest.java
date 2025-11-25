@@ -154,30 +154,6 @@ class LocationServiceTest {
     }
     
     @Test
-    void testUpdateLocationRateLimitExactly30Seconds() {
-        // Given - last update was 29 seconds ago (clearly within rate limit, should be blocked)
-        Long technicianId = 101L;
-        TechnicianLocation recentLocation = TechnicianLocation.builder()
-                .id(1L)
-                .technicianId(technicianId)
-                .latitude(39.7817)
-                .longitude(-89.6501)
-                .accuracy(5.0)
-                .timestamp(LocalDateTime.now().minusSeconds(29))
-                .build();
-        
-        when(locationRepository.findFirstByTechnicianIdOrderByTimestampDesc(technicianId))
-                .thenReturn(Optional.of(recentLocation));
-        
-        // When / Then
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> locationService.updateLocation(technicianId, validRequest));
-        
-        assertTrue(exception.getMessage().contains("Rate limit exceeded"));
-        verify(locationRepository, never()).save(any(TechnicianLocation.class));
-    }
-    
-    @Test
     void testUpdateLocationRateLimitJustUnder30Seconds() {
         // Given - last update was 29 seconds ago (should be blocked)
         Long technicianId = 101L;
