@@ -2,6 +2,7 @@ package com.fsm.task.infrastructure.config;
 
 import com.fsm.task.application.exception.InvalidAssignmentException;
 import com.fsm.task.application.exception.TaskNotFoundException;
+import com.fsm.task.application.exception.TechnicianNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -121,5 +122,25 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+    
+    /**
+     * Handles TechnicianNotFoundException and returns 404 Not Found.
+     * 
+     * @param ex the exception
+     * @return ResponseEntity with error details
+     */
+    @ExceptionHandler(TechnicianNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleTechnicianNotFoundException(TechnicianNotFoundException ex) {
+        log.warn("TechnicianNotFoundException: {}", ex.getMessage());
+        
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("status", HttpStatus.NOT_FOUND.value());
+        body.put("error", "Technician Not Found");
+        body.put("message", ex.getMessage());
+        body.put("technicianId", ex.getTechnicianId());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 }

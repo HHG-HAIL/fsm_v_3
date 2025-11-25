@@ -8,6 +8,7 @@ import com.fsm.task.application.dto.TaskListResponse;
 import com.fsm.task.application.dto.TaskResponse;
 import com.fsm.task.application.exception.InvalidAssignmentException;
 import com.fsm.task.application.exception.TaskNotFoundException;
+import com.fsm.task.application.exception.TechnicianNotFoundException;
 import com.fsm.task.domain.model.Assignment;
 import com.fsm.task.domain.model.Assignment.AssignmentStatus;
 import com.fsm.task.domain.model.AssignmentHistory;
@@ -55,6 +56,9 @@ class TaskServiceTest {
     
     @Mock
     private AssignmentHistoryRepository assignmentHistoryRepository;
+    
+    @Mock
+    private TechnicianValidationService technicianValidationService;
     
     @InjectMocks
     private TaskService taskService;
@@ -851,6 +855,93 @@ class TaskServiceTest {
         ServiceTask savedTask = taskCaptor.getValue();
         assertEquals(technicianId, savedTask.getAssignedTechnicianId());
         assertEquals(TaskStatus.ASSIGNED, savedTask.getStatus());
+    }
+    
+    @Test
+    void testAssignTaskTechnicianNotFoundThrowsException() {
+        Long taskId = 1L;
+        Long technicianId = 999L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        doThrow(new TechnicianNotFoundException(technicianId))
+                .when(technicianValidationService).validateTechnician(technicianId);
+        
+        TechnicianNotFoundException exception = assertThrows(
+                TechnicianNotFoundException.class,
+                () -> taskService.assignTask(taskId, request, assignedBy)
+        );
+        
+        assertEquals(technicianId, exception.getTechnicianId());
+        assertTrue(exception.getMessage().contains("not found"));
+        
+        verify(assignmentRepository, never()).save(any());
+        verify(taskRepository, never()).save(any());
+    }
+    
+    @Test
+    void testAssignTaskTechnicianInactiveThrowsException() {
+        Long taskId = 1L;
+        Long technicianId = 102L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        doThrow(new TechnicianNotFoundException(technicianId, "is not active"))
+                .when(technicianValidationService).validateTechnician(technicianId);
+        
+        TechnicianNotFoundException exception = assertThrows(
+                TechnicianNotFoundException.class,
+                () -> taskService.assignTask(taskId, request, assignedBy)
+        );
+        
+        assertEquals(technicianId, exception.getTechnicianId());
+        assertTrue(exception.getMessage().contains("not active"));
+        
+        verify(assignmentRepository, never()).save(any());
+        verify(taskRepository, never()).save(any());
+    }
+    
+    @Test
+    void testAssignTaskCallsTechnicianValidation() {
+        Long taskId = 1L;
+        Long technicianId = 101L;
+        String assignedBy = "dispatcher@fsm.com";
+        
+        ServiceTask task = createTask(taskId, "Test Task", Priority.HIGH, TaskStatus.UNASSIGNED);
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .build();
+        
+        Assignment savedAssignment = Assignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedAt(LocalDateTime.now())
+                .assignedBy(assignedBy)
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        // Default mock behavior - do nothing (validation passes)
+        when(assignmentRepository.save(any(Assignment.class))).thenReturn(savedAssignment);
+        when(assignmentHistoryRepository.save(any(AssignmentHistory.class))).thenReturn(null);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        when(assignmentRepository.getTechnicianWorkload(technicianId)).thenReturn(1);
+        
+        taskService.assignTask(taskId, request, assignedBy);
+        
+        // Verify that technician validation was called
+        verify(technicianValidationService).validateTechnician(technicianId);
     }
     
     // Helper method to create test tasks
