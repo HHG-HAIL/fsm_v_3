@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createTask, getAddressSuggestions, getTechnicians, assignTask } from './taskApi';
+import { createTask, getAddressSuggestions, getTechnicians, assignTask, getTasks, reassignTask } from './taskApi';
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -541,6 +541,157 @@ describe('taskApi', () => {
       fetch.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(assignTask(100, 1)).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('reassignTask', () => {
+    const mockReassignmentResponse = {
+      assignmentId: 1,
+      taskId: 100,
+      previousTechnicianId: 1,
+      newTechnicianId: 2,
+      reassignedAt: '2024-01-01T10:00:00Z',
+      reassignedBy: 'dispatcher@fsm.com',
+      reason: 'Technician on leave',
+      taskStatus: 'ASSIGNED',
+      newTechnicianWorkload: 5,
+      assignmentHistory: [
+        {
+          id: 1,
+          technicianId: 1,
+          previousTechnicianId: null,
+          action: 'ASSIGNED',
+          actionBy: 'dispatcher@fsm.com',
+          actionAt: '2024-01-01T09:00:00Z',
+          reason: null,
+        },
+        {
+          id: 2,
+          technicianId: 2,
+          previousTechnicianId: 1,
+          action: 'REASSIGNED',
+          actionBy: 'dispatcher@fsm.com',
+          actionAt: '2024-01-01T10:00:00Z',
+          reason: 'Technician on leave',
+        },
+      ],
+    };
+
+    it('reassigns task successfully with reason', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockReassignmentResponse,
+      });
+
+      const result = await reassignTask(100, 2, 'Technician on leave');
+
+      expect(result).toEqual(mockReassignmentResponse);
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:8081/api/tasks/100/reassign',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            newTechnicianId: 2, 
+            reason: 'Technician on leave' 
+          }),
+        }
+      );
+    });
+
+    it('reassigns task successfully without reason', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockReassignmentResponse,
+      });
+
+      await reassignTask(100, 2);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:8081/api/tasks/100/reassign',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ newTechnicianId: 2 }),
+        }
+      );
+    });
+
+    it('reassigns task successfully with null reason', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockReassignmentResponse,
+      });
+
+      await reassignTask(100, 2, null);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'http://localhost:8081/api/tasks/100/reassign',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ newTechnicianId: 2 }),
+        }
+      );
+    });
+
+    it('includes auth token in headers when available', async () => {
+      localStorage.setItem('token', 'test-token-reassign');
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockReassignmentResponse,
+      });
+
+      await reassignTask(100, 2, 'Reason');
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer test-token-reassign',
+          },
+        })
+      );
+    });
+
+    it('throws error when API returns error response', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Cannot reassign completed task' }),
+      });
+
+      await expect(reassignTask(100, 2)).rejects.toThrow('Cannot reassign completed task');
+    });
+
+    it('throws error when reason is required but not provided', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: 'Reason is required for IN_PROGRESS tasks' }),
+      });
+
+      await expect(reassignTask(100, 2)).rejects.toThrow('Reason is required for IN_PROGRESS tasks');
+    });
+
+    it('throws default error message when API error has no message', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({}),
+      });
+
+      await expect(reassignTask(100, 2)).rejects.toThrow('Failed to reassign task');
+    });
+
+    it('handles network errors', async () => {
+      fetch.mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(reassignTask(100, 2)).rejects.toThrow('Network error');
     });
   });
 });
