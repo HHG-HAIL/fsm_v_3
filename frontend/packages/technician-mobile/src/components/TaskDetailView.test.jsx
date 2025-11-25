@@ -510,6 +510,25 @@ describe('TaskDetailView', () => {
       });
     });
 
+    it('should show success message after marking in progress', async () => {
+      taskService.getTaskById.mockResolvedValue(mockTask);
+      taskService.updateTaskStatus.mockResolvedValue({ ...mockTask, status: 'IN_PROGRESS' });
+
+      render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as in progress' }));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Task marked as in progress successfully!')).toBeInTheDocument();
+      });
+    });
+
     it('should call onStatusUpdate callback when provided', async () => {
       taskService.getTaskById.mockResolvedValue(mockTask);
       taskService.updateTaskStatus.mockResolvedValue({ ...mockTask, status: 'IN_PROGRESS' });
@@ -590,6 +609,38 @@ describe('TaskDetailView', () => {
         resolveUpdate({ ...mockTask, status: 'IN_PROGRESS' });
       });
     });
+
+    it('should clear error message before showing success', async () => {
+      taskService.getTaskById.mockResolvedValue(mockTask);
+      taskService.updateTaskStatus
+        .mockRejectedValueOnce(new Error('First attempt failed'))
+        .mockResolvedValueOnce({ ...mockTask, status: 'IN_PROGRESS' });
+
+      render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
+      });
+
+      // First attempt - should fail
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as in progress' }));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('First attempt failed')).toBeInTheDocument();
+      });
+
+      // Second attempt - should succeed
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as in progress' }));
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('First attempt failed')).not.toBeInTheDocument();
+        expect(screen.getByText('Task marked as in progress successfully!')).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Mark Completed', () => {
@@ -630,6 +681,25 @@ describe('TaskDetailView', () => {
 
       await waitFor(() => {
         expect(screen.getByText('COMPLETED')).toBeInTheDocument();
+      });
+    });
+
+    it('should show success message after marking completed', async () => {
+      taskService.getTaskById.mockResolvedValue(inProgressTask);
+      taskService.updateTaskStatus.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
+
+      render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Task marked as completed successfully!')).toBeInTheDocument();
       });
     });
 
