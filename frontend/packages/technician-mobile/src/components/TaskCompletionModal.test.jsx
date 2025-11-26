@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import TaskCompletionModal from './TaskCompletionModal';
 
 describe('TaskCompletionModal', () => {
   const mockOnClose = vi.fn();
   const mockOnSubmit = vi.fn();
+
+  // Helper function to get the form element
+  const getForm = () => screen.getByRole('button', { name: 'Complete Task' }).closest('form');
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -173,8 +176,8 @@ describe('TaskCompletionModal', () => {
         />
       );
 
-      const submitButton = screen.getByText('Complete Task');
-      fireEvent.click(submitButton);
+      const form = getForm();
+      fireEvent.submit(form);
 
       expect(screen.getByText('Work summary must be at least 10 characters long')).toBeInTheDocument();
       expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -192,7 +195,7 @@ describe('TaskCompletionModal', () => {
       const textarea = screen.getByLabelText('Work Summary *');
       fireEvent.change(textarea, { target: { value: '          ' } });
 
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(screen.getByText('Work summary must be at least 10 characters long')).toBeInTheDocument();
@@ -212,7 +215,7 @@ describe('TaskCompletionModal', () => {
       
       // Trigger validation error
       fireEvent.change(textarea, { target: { value: 'Short' } });
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(screen.getByText('Work summary must be at least 10 characters long')).toBeInTheDocument();
@@ -235,7 +238,7 @@ describe('TaskCompletionModal', () => {
       const textarea = screen.getByLabelText('Work Summary *');
       fireEvent.change(textarea, { target: { value: 'Short' } });
 
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(textarea).toHaveClass('error');
@@ -256,7 +259,7 @@ describe('TaskCompletionModal', () => {
       expect(textarea).toHaveAttribute('aria-invalid', 'false');
 
       fireEvent.change(textarea, { target: { value: 'Short' } });
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(textarea).toHaveAttribute('aria-invalid', 'true');
@@ -276,7 +279,7 @@ describe('TaskCompletionModal', () => {
       const textarea = screen.getByLabelText('Work Summary *');
       fireEvent.change(textarea, { target: { value: '  Valid work summary with spaces  ' } });
 
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(mockOnSubmit).toHaveBeenCalledWith('Valid work summary with spaces');
@@ -295,7 +298,7 @@ describe('TaskCompletionModal', () => {
       const textarea = screen.getByLabelText('Work Summary *');
       fireEvent.change(textarea, { target: { value: '1234567890' } });
 
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(mockOnSubmit).toHaveBeenCalledWith('1234567890');
@@ -313,7 +316,7 @@ describe('TaskCompletionModal', () => {
       const textarea = screen.getByLabelText('Work Summary *');
       fireEvent.change(textarea, { target: { value: 'This is a very long work summary with more than 10 characters' } });
 
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(mockOnSubmit).toHaveBeenCalledTimes(1);
@@ -379,7 +382,7 @@ describe('TaskCompletionModal', () => {
       // Trigger validation error
       const textarea = screen.getByLabelText('Work Summary *');
       fireEvent.change(textarea, { target: { value: 'Short' } });
-      const submitButton = screen.getByText('Complete Task');
+      const submitButton = screen.getByRole('button', { name: 'Complete Task' });
       fireEvent.click(submitButton);
 
       expect(screen.getByText('Work summary must be at least 10 characters long')).toBeInTheDocument();
@@ -458,7 +461,7 @@ describe('TaskCompletionModal', () => {
       );
 
       expect(screen.getByText('Completing...')).toBeInTheDocument();
-      expect(screen.queryByText('Complete Task')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Complete Task' })).not.toBeInTheDocument();
     });
   });
 
@@ -472,7 +475,7 @@ describe('TaskCompletionModal', () => {
         />
       );
 
-      const overlay = screen.getByText('Complete Task').parentElement.parentElement;
+      const overlay = screen.getByRole('heading', { name: 'Complete Task' }).parentElement.parentElement.parentElement;
       fireEvent.click(overlay);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -487,7 +490,7 @@ describe('TaskCompletionModal', () => {
         />
       );
 
-      const modalContent = screen.getByText('Complete Task').parentElement.parentElement;
+      const modalContent = screen.getByRole('heading', { name: 'Complete Task' }).parentElement.parentElement;
       fireEvent.click(modalContent);
 
       // Click should be stopped from propagating, so onClose shouldn't be called
@@ -538,8 +541,8 @@ describe('TaskCompletionModal', () => {
         />
       );
 
-      const submitButton = screen.getByText('Complete Task');
-      fireEvent.click(submitButton);
+      const form = getForm();
+      fireEvent.submit(form);
 
       const errorMessage = screen.getByText('Work summary must be at least 10 characters long');
       expect(errorMessage).toHaveAttribute('role', 'alert');
@@ -555,8 +558,8 @@ describe('TaskCompletionModal', () => {
       );
 
       const textarea = screen.getByLabelText('Work Summary *');
-      const submitButton = screen.getByText('Complete Task');
-      fireEvent.click(submitButton);
+      const form = getForm();
+      fireEvent.submit(form);
 
       expect(textarea).toHaveAttribute('aria-describedby', 'summary-error');
     });
