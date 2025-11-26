@@ -661,7 +661,7 @@ describe('TaskDetailView', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Complete Task')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Complete Task' })).toBeInTheDocument();
       });
     });
 
@@ -681,7 +681,7 @@ describe('TaskDetailView', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Complete Task')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Complete Task' })).toBeInTheDocument();
       });
 
       // Fill in work summary
@@ -817,7 +817,6 @@ describe('TaskDetailView', () => {
     });
 
     it('should close modal and navigate back after successful completion', async () => {
-      vi.useFakeTimers();
       taskService.getTaskById.mockResolvedValue(inProgressTask);
       taskService.completeTask.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
 
@@ -845,14 +844,10 @@ describe('TaskDetailView', () => {
         expect(screen.getByText('Task completed successfully!')).toBeInTheDocument();
       });
 
-      // Fast-forward time to trigger navigation
-      await act(async () => {
-        vi.advanceTimersByTime(2000);
-      });
-
-      expect(mockOnBack).toHaveBeenCalledTimes(1);
-
-      vi.useRealTimers();
+      // Wait for navigation to be called (after 2 second timeout in component)
+      await waitFor(() => {
+        expect(mockOnBack).toHaveBeenCalledTimes(1);
+      }, { timeout: 3000 });
     });
 
     it('should close modal when completion fails', async () => {
@@ -870,7 +865,7 @@ describe('TaskDetailView', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
       });
 
-      expect(screen.getByText('Complete Task')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Complete Task' })).toBeInTheDocument();
 
       // Fill in work summary and submit
       const textarea = screen.getByLabelText('Work Summary *');
