@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TaskMarkersLayer from './TaskMarkersLayer';
 
-// Mock TaskMarker component
-vi.mock('./TaskMarker', () => ({
+// Mock DraggableTaskMarker component
+vi.mock('./DraggableTaskMarker', () => ({
   default: ({ task, onClick, onAssignTask, onViewDetails }) => (
     <div 
       data-testid={`task-marker-${task.id}`}

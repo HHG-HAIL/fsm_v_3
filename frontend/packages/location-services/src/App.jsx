@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import './App.css'
 import Map from './components/Map'
 import MapAssignmentModal from './components/MapAssignmentModal'
+import DragConfirmationModal from './components/DragConfirmationModal'
 import Notification from './components/Notification'
 import { useUnassignedTasks } from './hooks/useUnassignedTasks'
 import { useTechnicianLocations } from './hooks/useTechnicianLocations'
@@ -28,6 +29,16 @@ function App() {
 
   // State for highlighted technicians
   const [highlightedTechnicianIds, setHighlightedTechnicianIds] = useState([]);
+
+  // State for drag-and-drop assignment
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(null);
+  const [nearbyTechnician, setNearbyTechnician] = useState(null);
+  const [dragConfirmationTask, setDragConfirmationTask] = useState(null);
+  const [dragConfirmationTechnician, setDragConfirmationTechnician] = useState(null);
+  const [isDragConfirmationOpen, setIsDragConfirmationOpen] = useState(false);
+  const [dragAssignmentError, setDragAssignmentError] = useState('');
+  const [dragAssignmentSuccess, setDragAssignmentSuccess] = useState('');
 
   // State for notification
   const [notification, setNotification] = useState({ 
@@ -80,7 +91,7 @@ function App() {
     setHighlightedTechnicianIds(technicianIds);
   }, []);
 
-  // Handler for confirming assignment
+  // Handler for confirming assignment (from click-to-assign modal)
   const handleConfirmAssignment = useCallback(async (taskId, technicianId) => {
     setIsAssigning(true);
     setAssignmentError('');
@@ -115,6 +126,97 @@ function App() {
       }, 1500);
     } catch (err) {
       setAssignmentError(err.message || 'Failed to assign task');
+      setNotification({
+        isVisible: true,
+        message: err.message || 'Failed to assign task',
+        type: 'error',
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  }, [technicians, refreshTasks, refreshTechnicians]);
+
+  // Drag-and-drop handlers
+  const handleDragStart = useCallback((task, position) => {
+    // Void unused parameter - task is passed through the callback chain
+    void task;
+    setIsDragging(true);
+    setDragPosition({ lat: position.lat, lng: position.lng });
+    setNearbyTechnician(null);
+  }, []);
+
+  const handleDrag = useCallback((task, position, technicianNearby) => {
+    // Void unused parameter - task is passed through the callback chain
+    void task;
+    setDragPosition({ lat: position.lat, lng: position.lng });
+    setNearbyTechnician(technicianNearby);
+  }, []);
+
+  const handleDragEnd = useCallback((task, finalPosition, droppedOnTechnician, originalPosition) => {
+    setIsDragging(false);
+    setDragPosition(null);
+    setNearbyTechnician(null);
+    
+    // Void unused parameters
+    void finalPosition;
+    void originalPosition;
+    
+    if (droppedOnTechnician) {
+      // Open confirmation modal for drag-and-drop assignment
+      setDragConfirmationTask(task);
+      setDragConfirmationTechnician(droppedOnTechnician);
+      setIsDragConfirmationOpen(true);
+      setDragAssignmentError('');
+      setDragAssignmentSuccess('');
+    }
+  }, []);
+
+  // Handler for closing drag confirmation modal
+  const handleCloseDragConfirmation = useCallback(() => {
+    if (!isAssigning) {
+      setIsDragConfirmationOpen(false);
+      setDragConfirmationTask(null);
+      setDragConfirmationTechnician(null);
+      setDragAssignmentError('');
+      setDragAssignmentSuccess('');
+    }
+  }, [isAssigning]);
+
+  // Handler for confirming drag-and-drop assignment
+  const handleConfirmDragAssignment = useCallback(async (taskId, technicianId) => {
+    setIsAssigning(true);
+    setDragAssignmentError('');
+    setDragAssignmentSuccess('');
+
+    try {
+      await assignTaskToTechnician(taskId, technicianId);
+      
+      // Find technician name for success message
+      const assignedTechnician = technicians.find(t => t.technicianId === technicianId);
+      const technicianName = assignedTechnician?.name || `Technician #${technicianId}`;
+      
+      setDragAssignmentSuccess(`Task successfully assigned to ${technicianName}`);
+      
+      // Show notification
+      setNotification({
+        isVisible: true,
+        message: `Task successfully assigned to ${technicianName} via drag-and-drop`,
+        type: 'success',
+      });
+
+      // Close modal after short delay to show success message
+      setTimeout(() => {
+        setIsDragConfirmationOpen(false);
+        setDragConfirmationTask(null);
+        setDragConfirmationTechnician(null);
+        setDragAssignmentSuccess('');
+        
+        // Refresh data to update map markers
+        refreshTasks();
+        refreshTechnicians();
+      }, 1500);
+    } catch (err) {
+      setDragAssignmentError(err.message || 'Failed to assign task');
       setNotification({
         isVisible: true,
         message: err.message || 'Failed to assign task',
@@ -176,10 +278,17 @@ function App() {
           onAssignTask={handleAssignTask}
           onViewDetails={handleViewDetails}
           onTechnicianClick={handleTechnicianClick}
+          onDragStart={handleDragStart}
+          onDrag={handleDrag}
+          onDragEnd={handleDragEnd}
+          isDragging={isDragging}
+          dragPosition={dragPosition}
+          nearbyTechnician={nearbyTechnician}
+          dropRadius={50}
         />
       </main>
 
-      {/* Map Assignment Modal */}
+      {/* Map Assignment Modal (Click-to-Assign) */}
       <MapAssignmentModal
         task={selectedTask}
         technicians={technicians}
@@ -190,6 +299,18 @@ function App() {
         isAssigning={isAssigning}
         error={assignmentError}
         successMessage={assignmentSuccess}
+      />
+
+      {/* Drag Confirmation Modal (Drag-and-Drop Assignment) */}
+      <DragConfirmationModal
+        task={dragConfirmationTask}
+        technician={dragConfirmationTechnician}
+        isOpen={isDragConfirmationOpen}
+        onClose={handleCloseDragConfirmation}
+        onConfirm={handleConfirmDragAssignment}
+        isAssigning={isAssigning}
+        error={dragAssignmentError}
+        successMessage={dragAssignmentSuccess}
       />
 
       {/* Success/Error Notification */}

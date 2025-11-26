@@ -52,6 +52,33 @@ vi.mock('./TaskMarkersLayer', () => ({
   ),
 }));
 
+// Mock TechnicianMarkersLayer component
+vi.mock('./TechnicianMarkersLayer', () => ({
+  default: ({ technicians, onTechnicianClick }) => (
+    <div 
+      data-testid="technician-markers-layer"
+      data-technicians-count={technicians?.length || 0}
+      onClick={() => onTechnicianClick && onTechnicianClick({ technicianId: 1 })}
+    >
+      Mock TechnicianMarkersLayer
+    </div>
+  ),
+}));
+
+// Mock DragOverlay component
+vi.mock('./DragOverlay', () => ({
+  default: ({ isDragging, dragPosition, nearbyTechnician }) => (
+    <div 
+      data-testid="drag-overlay"
+      data-is-dragging={isDragging}
+      data-drag-position={JSON.stringify(dragPosition)}
+      data-nearby-technician={JSON.stringify(nearbyTechnician)}
+    >
+      Mock DragOverlay
+    </div>
+  ),
+}));
+
 describe('Map', () => {
   describe('Rendering', () => {
     it('renders the map with default props', () => {
