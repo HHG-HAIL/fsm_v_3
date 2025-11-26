@@ -4,6 +4,7 @@ import './App.css'
 const IDENTITY_SERVICE_URL = import.meta.env.VITE_IDENTITY_SERVICE_URL || 'http://localhost:5174';
 const TASK_MANAGEMENT_SERVICE_URL = import.meta.env.VITE_TASK_MANAGEMENT_SERVICE_URL || 'http://localhost:5175';
 const TECHNICIAN_MOBILE_SERVICE_URL = import.meta.env.VITE_TECHNICIAN_MOBILE_SERVICE_URL || 'http://localhost:5176';
+const LOCATION_SERVICES_URL = import.meta.env.VITE_LOCATION_SERVICES_URL || 'http://localhost:5178';
 
 function App() {
   const [activeService, setActiveService] = useState('identity');
@@ -31,6 +32,12 @@ function App() {
           >
             Technician Mobile
           </button>
+          <button
+            className={`nav-button ${activeService === 'location-services' ? 'active' : ''}`}
+            onClick={() => setActiveService('location-services')}
+          >
+            Location Services
+          </button>
         </nav>
       </header>
       <main className="shell-content">
@@ -52,6 +59,13 @@ function App() {
           <iframe
             src={TECHNICIAN_MOBILE_SERVICE_URL}
             title="Technician Mobile Service"
+            className="micro-frontend-iframe"
+          />
+        )}
+        {activeService === 'location-services' && (
+          <iframe
+            src={LOCATION_SERVICES_URL}
+            title="Location Services"
             className="micro-frontend-iframe"
           />
         )}
