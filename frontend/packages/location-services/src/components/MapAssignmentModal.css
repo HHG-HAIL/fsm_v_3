@@ -1,0 +1,345 @@
+/* MapAssignmentModal CSS Styles */
+
+.map-assignment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.map-assignment-modal-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 480px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.map-assignment-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.map-assignment-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.map-assignment-modal-close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.map-assignment-modal-close-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.map-assignment-modal-close-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.map-assignment-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Task Info Section */
+.map-assignment-task-info {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.map-assignment-task-title {
+  margin: 0 0 4px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.map-assignment-task-address {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #0284c7;
+}
+
+/* Error and Success Banners */
+.map-assignment-modal-error-banner {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  border: 1px solid #fecaca;
+}
+
+.map-assignment-modal-success-banner {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  border: 1px solid #bbf7d0;
+}
+
+/* Confirmation View */
+.map-assignment-confirmation-view {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.map-assignment-confirmation-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 16px 0;
+}
+
+.map-assignment-confirmation-details {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+}
+
+.map-assignment-confirmation-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 12px 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.map-assignment-confirmation-label:first-child {
+  margin-top: 0;
+}
+
+.map-assignment-confirmation-value {
+  font-size: 1rem;
+  color: #111827;
+  margin: 0;
+  font-weight: 500;
+}
+
+.map-assignment-confirmation-warning {
+  background-color: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-top: 16px;
+  font-size: 0.875rem;
+}
+
+/* Empty State */
+.map-assignment-empty-state {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.map-assignment-empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.map-assignment-empty-state-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Technician List */
+.map-assignment-technician-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.map-assignment-technician-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.map-assignment-technician-item:last-child {
+  margin-bottom: 0;
+}
+
+.map-assignment-technician-item:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.map-assignment-technician-item.selected {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.map-assignment-technician-item.at-capacity {
+  border-color: #fcd34d;
+  background-color: #fffbeb;
+}
+
+.map-assignment-technician-item.at-capacity.selected {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+.map-assignment-technician-item.unavailable {
+  opacity: 0.7;
+}
+
+.map-assignment-technician-info {
+  flex: 1;
+}
+
+.map-assignment-technician-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.map-assignment-technician-name {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.map-assignment-warning-icon {
+  margin-left: 4px;
+}
+
+.map-assignment-technician-status {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.map-assignment-technician-details {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.map-assignment-technician-distance {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-assignment-technician-workload {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-assignment-capacity-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-top: 8px;
+}
+
+/* Modal Actions */
+.map-assignment-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  border-radius: 0 0 8px 8px;
+}
+
+.map-assignment-modal-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.map-assignment-modal-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.map-assignment-modal-button-primary {
+  background-color: #3b82f6;
+  color: #fff;
+}
+
+.map-assignment-modal-button-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.map-assignment-modal-button-secondary {
+  background-color: #fff;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.map-assignment-modal-button-secondary:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}

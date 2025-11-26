@@ -1,6 +1,6 @@
 import { Marker, Popup } from 'react-leaflet';
 import { getStatusColor, getStatusLabel } from '../services/technicianService';
-import { createTechnicianMarkerIcon } from '../utils/markerUtils';
+import { createTechnicianMarkerIcon, createHighlightedTechnicianMarkerIcon } from '../utils/markerUtils';
 import './TechnicianMarker.css';
 
 /**
@@ -15,6 +15,7 @@ import './TechnicianMarker.css';
  * @param {number} props.technician.accuracy - Location accuracy in meters
  * @param {string} props.technician.timestamp - Location timestamp
  * @param {number} props.technician.batteryLevel - Battery level percentage (0-100)
+ * @param {boolean} props.technician.isHighlighted - Whether the technician is highlighted
  * @param {function} props.onClick - Optional click handler
  */
 const TechnicianMarker = ({ technician, onClick }) => {
@@ -22,8 +23,10 @@ const TechnicianMarker = ({ technician, onClick }) => {
     return null;
   }
 
-  const { technicianId, name, status, latitude, longitude, accuracy, timestamp, batteryLevel } = technician;
-  const icon = createTechnicianMarkerIcon(status);
+  const { technicianId, name, status, latitude, longitude, accuracy, timestamp, batteryLevel, isHighlighted } = technician;
+  const icon = isHighlighted 
+    ? createHighlightedTechnicianMarkerIcon(status) 
+    : createTechnicianMarkerIcon(status);
   const statusLabel = getStatusLabel(status);
 
   const handleClick = () => {
@@ -40,6 +43,7 @@ const TechnicianMarker = ({ technician, onClick }) => {
       position={[latitude, longitude]}
       icon={icon}
       eventHandlers={{ click: handleClick }}
+      zIndexOffset={isHighlighted ? 1000 : 0}
     >
       <Popup>
         <div className="technician-popup">
