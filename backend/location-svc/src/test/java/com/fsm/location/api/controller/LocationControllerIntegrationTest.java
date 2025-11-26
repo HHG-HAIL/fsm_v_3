@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -44,6 +45,7 @@ class LocationControllerIntegrationTest {
         locationRepository.deleteAll();
     }
     
+    @WithMockUser
     @Test
     void testUpdateLocationSuccessfullyPersistsToDatabase() throws Exception {
         // Given
@@ -82,6 +84,7 @@ class LocationControllerIntegrationTest {
         assertNotNull(savedLocation.getCreatedAt());
     }
     
+    @WithMockUser
     @Test
     void testUpdateLocationEnforcesRateLimiting() throws Exception {
         // Given - first location update
@@ -113,6 +116,7 @@ class LocationControllerIntegrationTest {
         assertEquals(1, locations.size());
     }
     
+    @WithMockUser
     @Test
     void testGetLatestLocationReturnsPersistedData() throws Exception {
         // Given - save a location first
@@ -138,6 +142,7 @@ class LocationControllerIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Location retrieved successfully"));
     }
     
+    @WithMockUser
     @Test
     void testGetLatestLocationReturnsNotFoundWhenNoLocation() throws Exception {
         // Given - no location exists for this technician
@@ -149,6 +154,7 @@ class LocationControllerIntegrationTest {
                 .andExpect(status().isNotFound());
     }
     
+    @WithMockUser
     @Test
     void testUpdateLocationValidatesCoordinates() throws Exception {
         // Given - invalid latitude
@@ -171,6 +177,7 @@ class LocationControllerIntegrationTest {
         assertEquals(0, locations.size());
     }
     
+    @WithMockUser
     @Test
     void testMultipleTechniciansCanUpdateIndependently() throws Exception {
         // Given - two different technicians
@@ -206,6 +213,7 @@ class LocationControllerIntegrationTest {
         assertEquals(technicianId2, locations2.get(0).getTechnicianId());
     }
     
+    @WithMockUser
     @Test
     void testUpdateLocationWithBoundaryValues() throws Exception {
         // Given - boundary latitude and longitude values
@@ -232,6 +240,7 @@ class LocationControllerIntegrationTest {
         assertEquals(0, locations.get(0).getBatteryLevel());
     }
     
+    @WithMockUser
     @Test
     void testUpdateLocationWithoutBatteryLevel() throws Exception {
         // Given - request without battery level
