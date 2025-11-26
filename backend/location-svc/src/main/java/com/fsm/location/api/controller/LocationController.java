@@ -2,12 +2,16 @@ package com.fsm.location.api.controller;
 
 import com.fsm.location.api.dto.LocationUpdateRequest;
 import com.fsm.location.api.dto.LocationUpdateResponse;
+import com.fsm.location.api.dto.TechnicianLocationDTO;
 import com.fsm.location.domain.model.TechnicianLocation;
+import com.fsm.location.infrastructure.security.RequireRole;
+import com.fsm.location.infrastructure.security.Role;
 import com.fsm.location.service.LocationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * REST Controller for technician location operations.
@@ -115,5 +121,37 @@ public class LocationController {
                     return ResponseEntity.ok(response);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+    
+    /**
+     * Gets all active technician locations for map display.
+     * Returns the latest location for each technician, filtering out stale locations (older than 15 minutes).
+     * Protected with RBAC - only DISPATCHER, SUPERVISOR, and ADMIN roles can access.
+     * Results are cached for 30 seconds to reduce database load.
+     * 
+     * @return list of active technician locations
+     */
+    @GetMapping("/locations")
+    @RequireRole({Role.DISPATCHER, Role.SUPERVISOR, Role.ADMIN})
+    @Operation(
+        summary = "Get all technician locations",
+        description = "Retrieves the latest location for each active technician for map display. " +
+                     "Filters out stale locations (older than 15 minutes). " +
+                     "Only accessible by DISPATCHER, SUPERVISOR, and ADMIN roles.",
+        security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved technician locations"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - authentication required"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - insufficient permissions")
+    })
+    public ResponseEntity<List<TechnicianLocationDTO>> getAllTechnicianLocations() {
+        log.info("Fetching all active technician locations");
+        
+        List<TechnicianLocationDTO> locations = locationService.getAllActiveTechnicianLocations();
+        
+        log.debug("Returning {} active technician locations", locations.size());
+        
+        return ResponseEntity.ok(locations);
     }
 }
