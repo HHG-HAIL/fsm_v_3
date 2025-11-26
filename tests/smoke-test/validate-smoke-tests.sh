@@ -23,6 +23,23 @@ echo ""
 # Check backend test files
 echo "Checking Backend Smoke Tests..."
 BACKEND_TESTS_FOUND=0
+DUPLICATE_FILES_FOUND=0
+
+# Check for duplicates in tests/smoke-test/ directory
+if [ -f "$ROOT_DIR/tests/smoke-test/identity-svc-smoke.test.java" ]; then
+    echo -e "${YELLOW}⚠ Duplicate: identity-svc smoke test found in tests/smoke-test/ (should only be in backend/identity-svc/src/test/)${NC}"
+    DUPLICATE_FILES_FOUND=$((DUPLICATE_FILES_FOUND + 1))
+fi
+
+if [ -f "$ROOT_DIR/tests/smoke-test/task-svc-smoke.test.java" ]; then
+    echo -e "${YELLOW}⚠ Duplicate: task-svc smoke test found in tests/smoke-test/ (should only be in backend/task-svc/src/test/)${NC}"
+    DUPLICATE_FILES_FOUND=$((DUPLICATE_FILES_FOUND + 1))
+fi
+
+if [ -f "$ROOT_DIR/tests/smoke-test/location-svc-smoke.test.java" ]; then
+    echo -e "${YELLOW}⚠ Duplicate: location-svc smoke test found in tests/smoke-test/ (should only be in backend/location-svc/src/test/)${NC}"
+    DUPLICATE_FILES_FOUND=$((DUPLICATE_FILES_FOUND + 1))
+fi
 
 if [ -f "$ROOT_DIR/backend/identity-svc/src/test/java/com/fsm/identity/smoke/IdentitySvcSmokeTest.java" ]; then
     echo -e "${GREEN}✓ identity-svc smoke test found${NC}"
@@ -199,6 +216,13 @@ echo -e "${GREEN}✓ $BACKEND_TESTS_FOUND backend smoke tests found${NC}"
 echo -e "${GREEN}✓ $FRONTEND_TESTS_FOUND frontend smoke tests found${NC}"
 echo -e "${GREEN}✓ Helper utilities in place${NC}"
 echo -e "${GREEN}✓ Orchestration script ready${NC}"
+
+if [ $DUPLICATE_FILES_FOUND -gt 0 ]; then
+    echo ""
+    echo -e "${YELLOW}⚠ Warning: $DUPLICATE_FILES_FOUND duplicate backend test file(s) found${NC}"
+    echo -e "${YELLOW}  Backend tests should only exist in backend/{service}/src/test/java/.../smoke/${NC}"
+fi
+
 echo ""
 echo "Report generated: $REPORT_FILE"
 echo ""
@@ -206,5 +230,9 @@ echo -e "${YELLOW}To execute tests, run: ./tests/smoke-test/run-smoke-tests.sh${
 echo ""
 
 cat "$REPORT_FILE"
+
+if [ $DUPLICATE_FILES_FOUND -gt 0 ]; then
+    exit 1
+fi
 
 exit 0

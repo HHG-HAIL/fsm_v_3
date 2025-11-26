@@ -166,6 +166,18 @@ kill -9 <PID>
 3. Check for missing dependencies
 4. Verify test data is not conflicting
 
+### Port Conflicts with Concurrent Tests
+
+Backend smoke tests use `DEFINED_PORT` to test services on their actual configured ports. This ensures the tests verify the services are running on the expected ports but means:
+- Tests cannot run concurrently in the same environment
+- Ports must be available before running tests
+- This is intentional for smoke testing to validate actual deployment configuration
+
+If you need to run tests concurrently, consider:
+1. Running tests on different machines/containers
+2. Using different port configurations per environment
+3. Running services in separate Docker containers with port mapping
+
 ## CI/CD Integration
 
 To integrate into CI/CD pipeline:
