@@ -145,11 +145,17 @@ public class LocationService {
      * - "available" if location is recent (within 5 minutes)
      * - "busy" if location is active but not recent (5-15 minutes)
      * 
+     * Note: Stale locations (>15 minutes) are filtered out by the query and not included
+     * in this endpoint's response. They would be considered offline and are excluded at
+     * the data retrieval level rather than shown with an 'offline' status.
+     * 
      * @param location the technician location entity
      * @return the DTO with derived status
      */
     private TechnicianLocationDTO convertToDTO(TechnicianLocation location) {
         // Derive status based on location freshness
+        // Only two statuses are returned: "available" or "busy"
+        // (stale/offline technicians are excluded by the query)
         String status = location.isRecent() ? "available" : "busy";
         
         // For now, use placeholder for name. In future, this would be fetched from identity-svc

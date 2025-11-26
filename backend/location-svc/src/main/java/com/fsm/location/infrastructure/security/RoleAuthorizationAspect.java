@@ -1,16 +1,15 @@
 package com.fsm.location.infrastructure.security;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -33,8 +32,7 @@ public class RoleAuthorizationAspect {
         if (authentication == null || !authentication.isAuthenticated() 
                 || "anonymousUser".equals(authentication.getPrincipal())) {
             log.warn("Unauthenticated access attempt to protected endpoint");
-            sendUnauthorizedResponse();
-            return null;
+            throw new AccessDeniedException("Full authentication is required to access this resource");
         }
         
         // Extract user's roles
@@ -60,39 +58,10 @@ public class RoleAuthorizationAspect {
         if (!hasRequiredRole) {
             log.warn("User with roles {} attempted to access endpoint requiring roles {}",
                     userRoles, requiredRoles);
-            sendForbiddenResponse();
-            return null;
+            throw new AccessDeniedException("Insufficient permissions to access this resource");
         }
         
         log.debug("User has required role. Granting access.");
         return joinPoint.proceed();
-    }
-    
-    private void sendUnauthorizedResponse() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attrs != null) {
-                HttpServletResponse response = attrs.getResponse();
-                if (response != null) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error sending unauthorized response", e);
-        }
-    }
-    
-    private void sendForbiddenResponse() {
-        try {
-            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attrs != null) {
-                HttpServletResponse response = attrs.getResponse();
-                if (response != null) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden");
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error sending forbidden response", e);
-        }
     }
 }
