@@ -12,7 +12,7 @@ The Notification Service is responsible for:
 
 ## Technology Stack
 
-- Java 21
+- Java 17
 - Spring Boot 3.2.0
 - Spring Data JPA
 - H2 Database (development)
