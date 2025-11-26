@@ -1,0 +1,38 @@
+/* Drag Overlay Styles */
+
+/* Animation for drop zone pulse effect */
+@keyframes dropzone-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+}
+
+/* Dragging task marker styles */
+.task-marker.dragging {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  cursor: grabbing !important;
+}
+
+.task-marker-icon.dragging {
+  cursor: grabbing !important;
+}
+
+/* Hint text in popup */
+.task-popup-hint {
+  margin: 12px 0 0 0;
+  padding: 8px;
+  background-color: #eff6ff;
+  border-radius: 4px;
+  color: #1d4ed8;
+  text-align: center;
+  font-size: 12px;
+}
