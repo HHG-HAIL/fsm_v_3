@@ -18,7 +18,9 @@ export const TechnicianStatus = {
  * @returns {Promise<Array>} Array of technician location objects
  */
 export async function fetchTechnicianLocations() {
-  const url = `${API_BASE_URL}/technicians/locations`;
+  // Construct URL properly to handle trailing slashes
+  const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const url = `${baseUrl}/technicians/locations`;
 
   const response = await fetch(url);
   

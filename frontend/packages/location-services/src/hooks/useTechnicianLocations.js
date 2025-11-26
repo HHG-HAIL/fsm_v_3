@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchTechnicianLocations } from '../services/technicianService';
 
 /**
@@ -13,27 +13,53 @@ export function useTechnicianLocations({ refreshInterval = 0 } = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const abortControllerRef = useRef(null);
 
   const loadTechnicians = useCallback(async () => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    const currentController = abortControllerRef.current;
+
     try {
       setLoading(true);
       setError(null);
       
       const data = await fetchTechnicianLocations();
       
-      setTechnicians(data);
-      setLastUpdated(new Date());
+      // Only update state if this request wasn't aborted
+      if (!currentController.signal.aborted) {
+        setTechnicians(data);
+        setLastUpdated(new Date());
+      }
     } catch (err) {
-      setError(err.message || 'Failed to load technician locations');
-      setTechnicians([]);
+      // Don't update state if request was aborted
+      if (!currentController.signal.aborted) {
+        setError(err.message || 'Failed to load technician locations');
+        setTechnicians([]);
+      }
     } finally {
-      setLoading(false);
+      // Only update loading state if this request wasn't aborted
+      if (!currentController.signal.aborted) {
+        setLoading(false);
+      }
     }
   }, []);
 
   // Initial load
   useEffect(() => {
     loadTechnicians();
+    
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [loadTechnicians]);
 
   // Auto-refresh

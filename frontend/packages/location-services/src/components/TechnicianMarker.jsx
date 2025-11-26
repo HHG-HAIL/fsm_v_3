@@ -18,7 +18,7 @@ import './TechnicianMarker.css';
  * @param {function} props.onClick - Optional click handler
  */
 const TechnicianMarker = ({ technician, onClick }) => {
-  if (!technician || !technician.latitude || !technician.longitude) {
+  if (!technician || technician.latitude == null || technician.longitude == null) {
     return null;
   }
 
