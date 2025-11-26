@@ -6,6 +6,7 @@ import * as taskService from '../services/taskService';
 vi.mock('../services/taskService', () => ({
   getTaskById: vi.fn(),
   updateTaskStatus: vi.fn(),
+  completeTask: vi.fn(),
 }));
 
 // Mock window.open
@@ -646,9 +647,8 @@ describe('TaskDetailView', () => {
   describe('Mark Completed', () => {
     const inProgressTask = { ...mockTask, status: 'IN_PROGRESS' };
 
-    it('should call updateTaskStatus when clicked', async () => {
+    it('should open completion modal when button clicked', async () => {
       taskService.getTaskById.mockResolvedValue(inProgressTask);
-      taskService.updateTaskStatus.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
 
       render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
 
@@ -661,13 +661,13 @@ describe('TaskDetailView', () => {
       });
 
       await waitFor(() => {
-        expect(taskService.updateTaskStatus).toHaveBeenCalledWith('1', 'COMPLETED');
+        expect(screen.getByText('Complete Task')).toBeInTheDocument();
       });
     });
 
-    it('should update UI after marking completed', async () => {
+    it('should call completeTask with work summary when modal submitted', async () => {
       taskService.getTaskById.mockResolvedValue(inProgressTask);
-      taskService.updateTaskStatus.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
+      taskService.completeTask.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
 
       render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
 
@@ -675,8 +675,53 @@ describe('TaskDetailView', () => {
         expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
       });
 
+      // Open modal
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Complete Task')).toBeInTheDocument();
+      });
+
+      // Fill in work summary
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Replaced air filter and checked refrigerant levels successfully' } });
+
+      // Submit form
+      const form = textarea.closest('form');
+      
+      await act(async () => {
+        fireEvent.submit(form);
+      });
+
+      await waitFor(() => {
+        expect(taskService.completeTask).toHaveBeenCalledWith('1', 'Replaced air filter and checked refrigerant levels successfully');
+      });
+    });
+
+    it('should update UI after completing task', async () => {
+      taskService.getTaskById.mockResolvedValue(inProgressTask);
+      taskService.completeTask.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
+
+      render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
+      });
+
+      // Open modal
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      // Fill in work summary and submit
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Work completed successfully' } });
+
+      const form = textarea.closest('form');
+      await act(async () => {
+        fireEvent.submit(form);
       });
 
       await waitFor(() => {
@@ -684,9 +729,9 @@ describe('TaskDetailView', () => {
       });
     });
 
-    it('should show success message after marking completed', async () => {
+    it('should show success message after completing task', async () => {
       taskService.getTaskById.mockResolvedValue(inProgressTask);
-      taskService.updateTaskStatus.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
+      taskService.completeTask.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
 
       render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
 
@@ -694,18 +739,28 @@ describe('TaskDetailView', () => {
         expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
       });
 
+      // Open modal
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
       });
 
+      // Fill in work summary and submit
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Work completed successfully' } });
+
+      const form = textarea.closest('form');
+      await act(async () => {
+        fireEvent.submit(form);
+      });
+
       await waitFor(() => {
-        expect(screen.getByText('Task marked as completed successfully!')).toBeInTheDocument();
+        expect(screen.getByText('Task completed successfully!')).toBeInTheDocument();
       });
     });
 
     it('should call onStatusUpdate callback when provided', async () => {
       taskService.getTaskById.mockResolvedValue(inProgressTask);
-      taskService.updateTaskStatus.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
+      taskService.completeTask.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
 
       render(<TaskDetailView taskId="1" onBack={mockOnBack} onStatusUpdate={mockOnStatusUpdate} />);
 
@@ -713,8 +768,18 @@ describe('TaskDetailView', () => {
         expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
       });
 
+      // Open modal
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      // Fill in work summary and submit
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Work completed successfully' } });
+
+      const form = textarea.closest('form');
+      await act(async () => {
+        fireEvent.submit(form);
       });
 
       await waitFor(() => {
@@ -722,9 +787,9 @@ describe('TaskDetailView', () => {
       });
     });
 
-    it('should show error message when update fails', async () => {
+    it('should show error message when completion fails', async () => {
       taskService.getTaskById.mockResolvedValue(inProgressTask);
-      taskService.updateTaskStatus.mockRejectedValue(new Error('Completion failed'));
+      taskService.completeTask.mockRejectedValue(new Error('Completion failed'));
 
       render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
 
@@ -732,13 +797,96 @@ describe('TaskDetailView', () => {
         expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
       });
 
+      // Open modal
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      // Fill in work summary and submit
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Work completed successfully' } });
+
+      const form = textarea.closest('form');
+      await act(async () => {
+        fireEvent.submit(form);
       });
 
       await waitFor(() => {
         expect(screen.getByText('Completion failed')).toBeInTheDocument();
       });
+    });
+
+    it('should close modal and navigate back after successful completion', async () => {
+      vi.useFakeTimers();
+      taskService.getTaskById.mockResolvedValue(inProgressTask);
+      taskService.completeTask.mockResolvedValue({ ...inProgressTask, status: 'COMPLETED' });
+
+      render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
+      });
+
+      // Open modal
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      // Fill in work summary and submit
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Work completed successfully' } });
+
+      const form = textarea.closest('form');
+      await act(async () => {
+        fireEvent.submit(form);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Task completed successfully!')).toBeInTheDocument();
+      });
+
+      // Fast-forward time to trigger navigation
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+      });
+
+      expect(mockOnBack).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
+    });
+
+    it('should close modal when completion fails', async () => {
+      taskService.getTaskById.mockResolvedValue(inProgressTask);
+      taskService.completeTask.mockRejectedValue(new Error('Completion failed'));
+
+      render(<TaskDetailView taskId="1" onBack={mockOnBack} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Fix HVAC System')).toBeInTheDocument();
+      });
+
+      // Open modal
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Mark task as completed' }));
+      });
+
+      expect(screen.getByText('Complete Task')).toBeInTheDocument();
+
+      // Fill in work summary and submit
+      const textarea = screen.getByLabelText('Work Summary *');
+      fireEvent.change(textarea, { target: { value: 'Work completed successfully' } });
+
+      const form = textarea.closest('form');
+      await act(async () => {
+        fireEvent.submit(form);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Completion failed')).toBeInTheDocument();
+      });
+
+      // Modal should be closed
+      expect(screen.queryByText('Work Summary *')).not.toBeInTheDocument();
     });
   });
 
