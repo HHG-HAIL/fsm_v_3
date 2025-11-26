@@ -2,10 +2,15 @@ import { MapContainer, TileLayer, ZoomControl, ScaleControl } from 'react-leafle
 import 'leaflet/dist/leaflet.css';
 import './Map.css';
 
+// Static OpenStreetMap configuration
+const TILE_LAYER_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
 /**
  * Map component that displays an OpenStreetMap using Leaflet
  * @param {Object} props - Component props
- * @param {Object} props.center - Map center coordinates {lat: number, lng: number}
+ * @param {Object} props.center - Map center coordinates as {lat: number, lng: number}. 
+ *   Internally converted to Leaflet's [lat, lng] array format.
  * @param {number} props.zoom - Initial zoom level (1-20)
  * @param {React.CSSProperties} props.style - Custom styles for the map container
  * @param {string} props.className - Additional CSS classes
@@ -22,10 +27,6 @@ const Map = ({
   scaleControl = true,
   scrollWheelZoom = true
 }) => {
-  // OpenStreetMap tile layer URL
-  const tileLayerUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
   return (
     <div className={`map-wrapper ${className}`} style={style}>
       <MapContainer
@@ -36,8 +37,8 @@ const Map = ({
         className="leaflet-map-container"
       >
         <TileLayer
-          attribution={attribution}
-          url={tileLayerUrl}
+          attribution={ATTRIBUTION}
+          url={TILE_LAYER_URL}
         />
         {zoomControl && <ZoomControl position="topright" />}
         {scaleControl && <ScaleControl position="bottomleft" />}
